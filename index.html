@@ -153,6 +153,12 @@ mark.bn-hl.bn-flash{animation:bnflash 1.5s ease}
 .bn-pop-foot{display:flex;gap:7px;margin-top:11px;flex-wrap:wrap}
 @keyframes bnflashbox{0%,100%{box-shadow:none}30%{box-shadow:0 0 0 3px rgba(255,212,59,.85)}}
 .bn-artnote.bn-flash{animation:bnflashbox 1.6s ease}
+#bn-adminbtn{width:100%;margin-top:6px}
+#bn-adminbtn.on{background:var(--accent);color:#fff;border-color:var(--accent)}
+.bn-pwrow{display:flex;flex-direction:column;gap:9px;margin:12px 0 2px}
+.bn-pwrow input{width:100%;background:var(--panel2);border:1px solid var(--line);border-radius:9px;color:var(--fg);font:inherit;font-size:14.5px;padding:10px 12px;outline:none;box-sizing:border-box}
+.bn-pwrow input:focus{border-color:var(--accent)}
+.bn-modehint{font-size:11.5px;color:var(--muted)}
 </style>
 </head><body>
 <button class="menubtn" id="menubtn">☰</button><div class="scrim" id="scrim"></div>
@@ -396,6 +402,47 @@ function bnDate(ts){try{var d=new Date(ts);function p(x){return(x<10?'0':'')+x;}
 var _toastT;
 function bnToast(msg){var t=document.getElementById('bn-toast');if(!t){t=document.createElement('div');t.id='bn-toast';t.className='bn-toast';document.body.appendChild(t);}t.textContent=msg;t.style.display='block';clearTimeout(_toastT);_toastT=setTimeout(function(){t.style.display='none';},3400);}
 
+/* ===== Quyền quản trị (admin) — mặc định chỉ xem, có mật khẩu mới chỉnh sửa ===== */
+var ADMKEY='bonao_admin_pw_v1', UNLKEY='bonao_admin_unlocked_v1';
+var BN_PW_HASH='f0cb26be3ebcc576';
+function bnHash(s){s=''+s;var h=5381,h2=2166136261>>>0,i,c;for(i=0;i<s.length;i++){c=s.charCodeAt(i);h=(Math.imul(h,33)+c)>>>0;h2=(h2^c)>>>0;h2=Math.imul(h2,16777619)>>>0;}return('0000000'+h.toString(16)).slice(-8)+('0000000'+h2.toString(16)).slice(-8);}
+function bnStoredHash(){try{var o=localStorage.getItem(ADMKEY);if(o)return o;}catch(e){}return BN_PW_HASH;}
+function bnIsAdmin(){try{return sessionStorage.getItem(UNLKEY)==='1';}catch(e){return false;}}
+function bnUnlock(){try{sessionStorage.setItem(UNLKEY,'1');}catch(e){}}
+function bnLock(){try{sessionStorage.removeItem(UNLKEY);}catch(e){}}
+function bnUpdateAdminBtn(){var b=document.getElementById('bn-adminbtn');if(!b)return;if(bnIsAdmin()){b.textContent='🔓 Thoát quản trị';b.classList.add('on');}else{b.textContent='🔒 Chế độ quản trị';b.classList.remove('on');}}
+function bnPromptUnlock(){
+  var ov=document.createElement('div');ov.className='bn-overlay';
+  ov.innerHTML='<div class="bn-modal"><h3>🔒 Chế độ quản trị</h3>'
+    +'<div class="bn-modehint">Nhập mật khẩu để bật chỉnh sửa (thêm / sửa / xóa ghi chú, bôi vàng). Người không có mật khẩu chỉ xem được, không sửa được nội dung của bạn.</div>'
+    +'<div class="bn-pwrow"><input id="bn-pw" type="password" placeholder="Mật khẩu quản trị" autocomplete="current-password"></div>'
+    +'<div class="bn-actions"><button class="bn-btn" data-k="cancel">Hủy</button><button class="bn-btn primary" data-k="ok">Mở khóa</button></div></div>';
+  document.body.appendChild(ov);
+  var inp=ov.querySelector('#bn-pw');inp.focus();
+  function submit(){if(bnHash(inp.value||'')===bnStoredHash()){bnUnlock();ov.remove();bnUpdateAdminBtn();render();bnToast('✅ Đã mở khóa — bạn có thể chỉnh sửa.');}else{bnToast('❌ Sai mật khẩu.');inp.select();}}
+  inp.addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();submit();}});
+  ov.addEventListener('click',function(e){if(e.target===ov){ov.remove();return;}var b=e.target.closest('[data-k]');if(!b)return;if(b.getAttribute('data-k')==='cancel')ov.remove();else submit();});
+}
+function bnPromptChange(){
+  var ov=document.createElement('div');ov.className='bn-overlay';
+  ov.innerHTML='<div class="bn-modal"><h3>🔑 Đổi mật khẩu quản trị</h3>'
+    +'<div class="bn-modehint">Mật khẩu mới chỉ áp dụng trên trình duyệt/thiết bị này.</div>'
+    +'<div class="bn-pwrow"><input id="bn-pc" type="password" placeholder="Mật khẩu hiện tại" autocomplete="current-password"><input id="bn-pn" type="password" placeholder="Mật khẩu mới (tối thiểu 4 ký tự)" autocomplete="new-password"><input id="bn-pn2" type="password" placeholder="Nhập lại mật khẩu mới" autocomplete="new-password"></div>'
+    +'<div class="bn-actions"><button class="bn-btn" data-k="cancel">Hủy</button><button class="bn-btn primary" data-k="ok">Lưu mật khẩu</button></div></div>';
+  document.body.appendChild(ov);ov.querySelector('#bn-pc').focus();
+  ov.addEventListener('click',function(e){
+    if(e.target===ov){ov.remove();return;}
+    var b=e.target.closest('[data-k]');if(!b)return;
+    if(b.getAttribute('data-k')==='cancel'){ov.remove();return;}
+    var cur=ov.querySelector('#bn-pc').value||'',n1=ov.querySelector('#bn-pn').value||'',n2=ov.querySelector('#bn-pn2').value||'';
+    if(bnHash(cur)!==bnStoredHash()){bnToast('❌ Mật khẩu hiện tại không đúng.');return;}
+    if((n1||'').length<4){bnToast('Mật khẩu mới cần tối thiểu 4 ký tự.');return;}
+    if(n1!==n2){bnToast('Hai ô mật khẩu mới chưa khớp.');return;}
+    try{localStorage.setItem(ADMKEY,bnHash(n1));bnToast('✅ Đã đổi mật khẩu trên thiết bị này.');}catch(e){bnToast('Không lưu được mật khẩu.');}
+    ov.remove();
+  });
+}
+
 function bnTextNodes(root){var out=[],w=document.createTreeWalker(root,NodeFilter.SHOW_TEXT,null,false),n;while(n=w.nextNode()){if(n.nodeValue&&!(n.parentNode&&n.parentNode.classList&&n.parentNode.classList.contains('bn-hl')))out.push(n);}return out;}
 function bnWrapQuote(root,quote,nid,color){
   if(!quote)return false;
@@ -423,11 +470,12 @@ function bnAfterRender(){
   var body=document.querySelector('.artbody');if(!body)return;
   var al=NOTES.filter(function(n){return n.so===view.so&&n.dieu===a.d&&!n.quote;});
   var html='';
-  al.forEach(function(n){html+='<div class="bn-artnote" data-nid="'+n.id+'"><div class="lbl">📌 Ghi chú của bạn</div><div class="nt" style="white-space:pre-wrap;margin-top:3px">'+esc(n.note)+'</div><div class="foot" style="display:flex;gap:8px;margin-top:7px"><button class="bn-mini" data-bn="edit" data-nid="'+n.id+'">Sửa</button><button class="bn-mini" data-bn="del" data-nid="'+n.id+'">Xóa</button></div></div>';});
-  html+='<button class="bn-addbtn" data-bn="addart">📌 Thêm ghi chú cho cả điều này</button><div style="font-size:11.5px;color:var(--muted);margin:2px 0 14px">💡 Mẹo: <b>bôi đen</b> một đoạn trong điều để bôi vàng + ghi chú riêng đoạn đó.</div>';
+  var adm=bnIsAdmin();
+  al.forEach(function(n){html+='<div class="bn-artnote" data-nid="'+n.id+'"><div class="lbl">📌 Ghi chú của bạn</div><div class="nt" style="white-space:pre-wrap;margin-top:3px">'+esc(n.note)+'</div>'+(adm?'<div class="foot" style="display:flex;gap:8px;margin-top:7px"><button class="bn-mini" data-bn="edit" data-nid="'+n.id+'">Sửa</button><button class="bn-mini" data-bn="del" data-nid="'+n.id+'">Xóa</button></div>':'')+'</div>';});
+  if(adm)html+='<button class="bn-addbtn" data-bn="addart">📌 Thêm ghi chú cho cả điều này</button><div style="font-size:11.5px;color:var(--muted);margin:2px 0 14px">💡 Mẹo: <b>bôi đen</b> một đoạn trong điều để bôi vàng + ghi chú riêng đoạn đó.</div>';
   body.insertAdjacentHTML('beforebegin',html);
   NOTES.filter(function(n){return n.so===view.so&&n.dieu===a.d&&n.quote;}).forEach(function(n){bnWrapQuote(body,n.quote,n.id,n.color);});
-  bnSetupSelection(body);
+  if(adm)bnSetupSelection(body);
   if(bnPendingFlash){(function(fid){setTimeout(function(){bnDoFlash(fid);},120);})(bnPendingFlash);bnPendingFlash=null;}
 }
 function bnMarkDocRows(){
@@ -500,7 +548,7 @@ function bnShowNoteView(n,anchor){
   pop.innerHTML='<div class="bn-pop-lbl">📝 Ghi chú của bạn</div>'
     +(n.quote?'<div class="bn-pop-q">“'+esc(n.quote)+'”</div>':'')
     +'<div class="bn-pop-nt">'+esc(n.note||'')+'</div>'
-    +'<div class="bn-pop-foot"><button class="bn-mini" data-bn="editview" data-nid="'+n.id+'">✏️ Sửa</button><button class="bn-mini" data-bn="delview" data-nid="'+n.id+'">🗑 Xóa</button><button class="bn-mini" data-bn="closeview">Đóng</button></div>';
+    +'<div class="bn-pop-foot">'+(bnIsAdmin()?'<button class="bn-mini" data-bn="editview" data-nid="'+n.id+'">✏️ Sửa</button><button class="bn-mini" data-bn="delview" data-nid="'+n.id+'">🗑 Xóa</button>':'')+'<button class="bn-mini" data-bn="closeview">Đóng</button></div>';
   document.body.appendChild(pop);
   if(anchor){var r=anchor.getBoundingClientRect();
     var left=window.scrollX+r.left;left=Math.max(10,Math.min(left,window.scrollX+window.innerWidth-pop.offsetWidth-12));
@@ -513,7 +561,10 @@ document.addEventListener('click',function(e){
   var mk=e.target.closest('mark.bn-hl');var el=e.target.closest('[data-bn]');
   if(mk&&!el){var nid=mk.getAttribute('data-nid');var n=NOTES.find(function(x){return x.id===nid;});if(n)bnShowNoteView(n,mk);return;}
   if(!el)return;var k=el.getAttribute('data-bn');
-  if(k==='addart'){var d=bySo[view.so],a=d.arts[view.i];bnOpenEditor({so:view.so,dieu:a.d,dtitle:a.t||'',quote:''});}
+  if((k==='addart'||k==='edit'||k==='del'||k==='editview'||k==='delview'||k==='import')&&!bnIsAdmin()){bnToast('Chế độ chỉ xem — bật “🔒 Chế độ quản trị” để chỉnh sửa.');return;}
+  if(k==='admintoggle'){if(bnIsAdmin()){bnLock();bnUpdateAdminBtn();render();bnToast('🔒 Đã khóa — chế độ chỉ xem.');}else{bnPromptUnlock();}}
+  else if(k==='chpw'){bnPromptChange();}
+  else if(k==='addart'){var d=bySo[view.so],a=d.arts[view.i];bnOpenEditor({so:view.so,dieu:a.d,dtitle:a.t||'',quote:''});}
   else if(k==='notes'){go({t:'notes'});}
   else if(k==='open'){var so=el.getAttribute('data-so'),dieu=parseInt(el.getAttribute('data-dieu'),10),nid2=el.getAttribute('data-nid');var i=bnArtIndex(so,dieu);if(i>=0){bnPendingFlash=nid2;go({t:'art',so:so,i:i});}}
   else if(k==='edit'){var n3=NOTES.find(function(x){return x.id===el.getAttribute('data-nid');});if(n3)bnOpenEditor({id:n3.id,so:n3.so,dieu:n3.dieu,dtitle:n3.dtitle,quote:n3.quote,note:n3.note,color:n3.color});}
@@ -542,13 +593,13 @@ function bnSearch(q){
 function bnListHTML(q){
   var list=bnSearch(q),h='';
   h+='<div style="font-size:12px;color:var(--muted);margin:2px 0 6px">'+list.length+' kết quả'+(q?' cho "'+esc(q)+'"':'')+'</div>';
-  if(!NOTES.length){return '<div class="callout info"><div class="ct">Chưa có ghi chú nào</div><p>Mở một <b>Điều</b> bất kỳ → <b>bôi đen</b> đoạn muốn lưu → bấm <b>“🖊️ Bôi vàng &amp; ghi chú”</b>. Hoặc dùng <b>“📌 Thêm ghi chú cho cả điều này”</b> ở đầu mỗi điều.</p></div>';}
+  if(!NOTES.length){return '<div class="callout info"><div class="ct">Chưa có ghi chú nào</div><p>'+(bnIsAdmin()?'Mở một <b>Điều</b> bất kỳ → <b>bôi đen</b> đoạn muốn lưu → bấm <b>“🖊️ Bôi vàng &amp; ghi chú”</b>. Hoặc dùng <b>“📌 Thêm ghi chú cho cả điều này”</b> ở đầu mỗi điều.':'Đang ở <b>chế độ chỉ xem</b>. Bấm <b>“🔒 Chế độ quản trị”</b> ở thanh bên để nhập mật khẩu và bật chỉnh sửa.')+'</p></div>';}
   if(!list.length)return h+'<p class="artctx" style="color:var(--muted)">Không có ghi chú khớp. Thử từ khóa khác.</p>';
   list.forEach(function(n){
     h+='<div class="bn-card"><div class="h"><span class="so-badge">'+esc(n.so)+'</span><span class="mono">Điều '+n.dieu+'</span><span style="font-size:13px">'+esc(n.dtitle||'')+'</span></div>';
     if(n.quote)h+='<div class="q">“'+esc(n.quote)+'”</div>';
     if(n.note)h+='<div class="nt">'+esc(n.note)+'</div>';
-    h+='<div class="foot"><button class="bn-mini" data-bn="open" data-so="'+esc(n.so)+'" data-dieu="'+n.dieu+'" data-nid="'+n.id+'">→ Mở điều khoản</button><button class="bn-mini" data-bn="edit" data-nid="'+n.id+'">Sửa</button><button class="bn-mini" data-bn="del" data-nid="'+n.id+'">Xóa</button><span class="date">'+bnDate(n.ts)+'</span></div></div>';
+    h+='<div class="foot"><button class="bn-mini" data-bn="open" data-so="'+esc(n.so)+'" data-dieu="'+n.dieu+'" data-nid="'+n.id+'">→ Mở điều khoản</button>'+(bnIsAdmin()?'<button class="bn-mini" data-bn="edit" data-nid="'+n.id+'">Sửa</button><button class="bn-mini" data-bn="del" data-nid="'+n.id+'">Xóa</button>':'')+'<span class="date">'+bnDate(n.ts)+'</span></div></div>';
   });
   return h;
 }
@@ -557,7 +608,7 @@ function bnRenderNotes(){
   var h='<h1 class="title">📝 Ghi chú của tôi</h1>';
   h+='<div class="pmeta"><span>'+NOTES.length+' ghi chú</span><span class="sep">·</span><span>Lưu trong trình duyệt này</span></div>';
   h+='<div class="bn-searchbox"><input id="bn-search" type="search" placeholder="Gõ từ khóa hoặc câu gợi ý để tìm ghi chú… (vd: chỉ định thầu, tạm ứng, nhóm B)" value="'+esc(bnLastQuery)+'"></div>';
-  h+='<div class="bn-notebar"><button class="bn-mini" data-bn="export">⬇ Xuất (.json)</button><button class="bn-mini" data-bn="import">⬆ Nhập</button><input type="file" id="bn-import-file" accept="application/json,.json" style="display:none"><span style="font-size:11.5px;color:var(--muted);margin-left:auto">Ghi chú lưu trên trình duyệt &amp; link này — nên dùng link GitHub Pages để không mất.</span></div>';
+  h+='<div class="bn-notebar"><button class="bn-mini" data-bn="export">⬇ Xuất (.json)</button>'+(bnIsAdmin()?'<button class="bn-mini" data-bn="import">⬆ Nhập</button><button class="bn-mini" data-bn="chpw">🔑 Đổi mật khẩu</button>':'')+'<input type="file" id="bn-import-file" accept="application/json,.json" style="display:none"><span style="font-size:11.5px;color:var(--muted);margin-left:auto">'+(bnIsAdmin()?'🔓 Đang ở chế độ quản trị — có thể chỉnh sửa.':'🔒 Chế độ chỉ xem — bật “Chế độ quản trị” để sửa.')+'</span></div>';
   h+='<div id="bn-list">'+bnListHTML(bnLastQuery)+'</div>';
   m.innerHTML=h;
   var si=document.getElementById('bn-search');
@@ -573,8 +624,8 @@ function bnUpdateBtn(){var b=document.getElementById('bn-notesbtn');if(b)b.textC
 // init: sidebar button + patch render
 (function init(){
   var tr=document.querySelector('.toolrow');
-  if(tr&&!document.getElementById('bn-notesbtn')){var b=document.createElement('button');b.className='tbtn';b.id='bn-notesbtn';b.setAttribute('data-bn','notes');b.textContent='📝 Ghi chú của tôi (0)';tr.insertAdjacentElement('afterend',b);}
-  bnUpdateBtn();
+  if(tr&&!document.getElementById('bn-notesbtn')){var b=document.createElement('button');b.className='tbtn';b.id='bn-notesbtn';b.setAttribute('data-bn','notes');b.textContent='📝 Ghi chú của tôi (0)';tr.insertAdjacentElement('afterend',b);var ab=document.createElement('button');ab.className='tbtn';ab.id='bn-adminbtn';ab.setAttribute('data-bn','admintoggle');ab.textContent='🔒 Chế độ quản trị';b.insertAdjacentElement('afterend',ab);}
+  bnUpdateBtn();bnUpdateAdminBtn();
   var _render=render;
   render=function(){ bnCloseView();bnRemoveTb(); if(typeof view!=='undefined'&&view&&view.t==='notes'){try{bnRenderNotes();}catch(e){console.error(e);}return;} _render.apply(this,arguments); try{bnAfterRender();}catch(e){console.error(e);} };
   try{bnAfterRender();}catch(e){}
