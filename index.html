@@ -399,20 +399,17 @@ function bnToast(msg){var t=document.getElementById('bn-toast');if(!t){t=documen
 function bnTextNodes(root){var out=[],w=document.createTreeWalker(root,NodeFilter.SHOW_TEXT,null,false),n;while(n=w.nextNode()){if(n.nodeValue&&!(n.parentNode&&n.parentNode.classList&&n.parentNode.classList.contains('bn-hl')))out.push(n);}return out;}
 function bnWrapQuote(root,quote,nid,color){
   if(!quote)return false;
-  var nodes=bnTextNodes(root),concat='',map=[],i;
-  for(i=0;i<nodes.length;i++){map.push({node:nodes[i],start:concat.length});concat+=nodes[i].nodeValue;}
-  var idx=concat.indexOf(quote);
-  if(idx<0){quote=quote.trim();idx=concat.indexOf(quote);}
-  if(idx<0)return false;
-  var start=idx,end=idx+quote.length,segs=[],j;
-  for(j=0;j<map.length;j++){var ns=map[j].start,ne=ns+map[j].node.nodeValue.length;if(ne<=start||ns>=end)continue;segs.push({node:map[j].node,a:Math.max(start,ns)-ns,b:Math.min(end,ne)-ns});}
-  for(var k=segs.length-1;k>=0;k--){
-    var seg=segs[k],node=seg.node,a=seg.a,b=seg.b;
-    if(a>0){node=node.splitText(a);b=b-a;}
-    if(b<node.nodeValue.length){node.splitText(b);}
-    var mk=document.createElement('mark');mk.className='bn-hl';mk.setAttribute('data-nid',nid);mk.style.background=COLORS[color]||COLORS.yellow;
-    node.parentNode.insertBefore(mk,node);mk.appendChild(node);
-  }
+  var nodes=bnTextNodes(root),chars=[],i,j;
+  for(i=0;i<nodes.length;i++){var v=nodes[i].nodeValue;for(j=0;j<v.length;j++){chars.push({node:nodes[i],off:j,ch:v.charAt(j)});}}
+  var sq='',map=[],prevWs=false,ch;
+  for(i=0;i<chars.length;i++){ch=chars[i].ch;if(/\s/.test(ch)){if(prevWs)continue;sq+=' ';map.push(i);prevWs=true;}else{sq+=ch;map.push(i);prevWs=false;}}
+  var q=quote.replace(/\s+/g,' ').trim();if(!q)return false;
+  var pos=sq.indexOf(q);if(pos<0)return false;
+  var startCi=map[pos],endCi=map[pos+q.length-1];
+  var segs=[],curNode=null,sA=0,sB=0,ci;
+  for(ci=startCi;ci<=endCi;ci++){var cn=chars[ci].node,co=chars[ci].off;if(cn!==curNode){if(curNode)segs.push({node:curNode,a:sA,b:sB+1});curNode=cn;sA=co;sB=co;}else sB=co;}
+  if(curNode)segs.push({node:curNode,a:sA,b:sB+1});
+  for(var k=segs.length-1;k>=0;k--){var seg=segs[k],node=seg.node,a=seg.a,b=seg.b;if(a>0){node=node.splitText(a);b=b-a;}if(b<node.nodeValue.length){node.splitText(b);}var mk=document.createElement('mark');mk.className='bn-hl';mk.setAttribute('data-nid',nid);mk.style.background=COLORS[color]||COLORS.yellow;node.parentNode.insertBefore(mk,node);mk.appendChild(node);}
   return segs.length>0;
 }
 
@@ -431,13 +428,7 @@ function bnAfterRender(){
   body.insertAdjacentHTML('beforebegin',html);
   NOTES.filter(function(n){return n.so===view.so&&n.dieu===a.d&&n.quote;}).forEach(function(n){bnWrapQuote(body,n.quote,n.id,n.color);});
   bnSetupSelection(body);
-  if(bnPendingFlash){
-    var nf=NOTES.find(function(x){return x.id===bnPendingFlash;});
-    var m=document.querySelector('mark.bn-hl[data-nid="'+bnPendingFlash+'"]');
-    if(m){m.scrollIntoView({behavior:'smooth',block:'center'});m.classList.add('bn-flash');setTimeout(function(){m.classList.remove('bn-flash');},1800);(function(mm,nn){setTimeout(function(){if(nn)bnShowNoteView(nn,mm);},440);})(m,nf);}
-    else{var ab=document.querySelector('.bn-artnote[data-nid="'+bnPendingFlash+'"]');if(ab){ab.scrollIntoView({behavior:'smooth',block:'center'});ab.classList.add('bn-flash');setTimeout(function(){ab.classList.remove('bn-flash');},1800);}}
-    bnPendingFlash=null;
-  }
+  if(bnPendingFlash){(function(fid){setTimeout(function(){bnDoFlash(fid);},120);})(bnPendingFlash);bnPendingFlash=null;}
 }
 function bnMarkDocRows(){
   document.querySelectorAll('.artrow[data-go]').forEach(function(row){
@@ -495,6 +486,13 @@ function bnOpenEditor(opts){
   });
 }
 
+function bnDoFlash(fid){
+  var nf=NOTES.find(function(x){return x.id===fid;});
+  var m=document.querySelector('mark.bn-hl[data-nid="'+fid+'"]');
+  if(m){m.scrollIntoView({behavior:'smooth',block:'center'});m.classList.add('bn-flash');setTimeout(function(){m.classList.remove('bn-flash');},1900);setTimeout(function(){if(nf)bnShowNoteView(nf,m);},650);return;}
+  var ab=document.querySelector('.bn-artnote[data-nid="'+fid+'"]');
+  if(ab){ab.scrollIntoView({behavior:'smooth',block:'center'});ab.classList.add('bn-flash');setTimeout(function(){ab.classList.remove('bn-flash');},1900);}
+}
 function bnCloseView(){var p=document.getElementById('bn-pop');if(p)p.remove();}
 function bnShowNoteView(n,anchor){
   bnCloseView();
