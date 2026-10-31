@@ -105,7 +105,49 @@ h1.title{font-family:var(--disp);font-weight:700;font-size:clamp(23px,3.4vw,32px
 .left.open{transform:none}
 .menubtn{display:inline-flex;position:fixed;top:11px;left:11px;z-index:60;background:var(--panel);border:1px solid var(--line);color:var(--fg);border-radius:8px;padding:8px 11px;cursor:pointer;font-size:16px}
 .main{padding-top:56px}.scrim{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:40}.scrim.show{display:block}}
-</style></head><body>
+</style>
+<style id="bn-style">
+mark.bn-hl{background:#ffe066;color:#1a1d22;border-radius:2px;padding:0 1px;cursor:pointer;box-shadow:inset 0 -1px 0 rgba(0,0,0,.18)}
+mark.bn-hl.bn-flash{animation:bnflash 1.5s ease}
+@keyframes bnflash{0%,100%{box-shadow:inset 0 -1px 0 rgba(0,0,0,.18)}30%{box-shadow:0 0 0 3px rgba(240,169,75,.95)}}
+.bn-seltb{position:absolute;z-index:2000;background:var(--fg-strong);color:var(--bg);border-radius:8px;padding:7px 11px;font-size:12.5px;font-weight:700;cursor:pointer;box-shadow:0 6px 18px rgba(0,0,0,.4);white-space:nowrap;border:0}
+.bn-seltb:hover{opacity:.92}
+.bn-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:3000;display:flex;align-items:center;justify-content:center;padding:16px}
+.bn-modal{background:var(--panel);border:1px solid var(--line);border-radius:13px;max-width:540px;width:100%;padding:18px 20px;box-shadow:0 24px 70px rgba(0,0,0,.5)}
+.bn-modal h3{margin:0 0 6px;font-family:var(--disp);color:var(--fg-strong);font-size:18px}
+.bn-quote{background:var(--panel2);border-left:3px solid #ffe066;border-radius:6px;padding:8px 11px;font-size:13px;color:var(--fg);margin:8px 0;max-height:140px;overflow:auto;white-space:pre-wrap}
+.bn-ta{width:100%;min-height:96px;background:var(--panel2);border:1px solid var(--line);border-radius:9px;color:var(--fg);font:inherit;font-size:14.5px;padding:11px;outline:none;resize:vertical;box-sizing:border-box}
+.bn-ta:focus{border-color:var(--accent)}
+.bn-colors{display:flex;gap:9px;margin:11px 0 2px}
+.bn-color{width:27px;height:27px;border-radius:50%;cursor:pointer;border:2px solid transparent}
+.bn-color.sel{border-color:var(--fg-strong);transform:scale(1.08)}
+.bn-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:14px}
+.bn-btn{border:1px solid var(--line);background:var(--panel2);color:var(--fg);border-radius:8px;padding:9px 15px;font:inherit;font-size:13px;cursor:pointer}
+.bn-btn.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+.bn-btn:hover{filter:brightness(1.08)}
+.bn-notebar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:0 0 14px}
+.bn-searchbox{position:relative;margin:6px 0 14px}
+.bn-searchbox input{width:100%;background:var(--panel2);border:1px solid var(--line);border-radius:11px;color:var(--fg);font:inherit;font-size:15px;padding:13px 14px 13px 42px;outline:none;box-sizing:border-box}
+.bn-searchbox input:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--hl)}
+.bn-searchbox::before{content:"🔎";position:absolute;left:14px;top:12px;font-size:15px}
+.bn-card{border:1px solid var(--line);border-radius:11px;background:var(--panel);padding:13px 15px;margin:10px 0}
+.bn-card .h{display:flex;gap:9px;align-items:baseline;flex-wrap:wrap;margin-bottom:5px}
+.bn-card .h .mono{font-family:var(--mono);font-size:11.5px;color:var(--accent2)}
+.bn-card .q{background:var(--panel2);border-left:3px solid #ffe066;border-radius:5px;padding:6px 10px;font-size:12.5px;color:var(--muted);margin:6px 0;white-space:pre-wrap}
+.bn-card .nt{font-size:14px;white-space:pre-wrap;color:var(--fg)}
+.bn-card .foot{display:flex;gap:8px;align-items:center;margin-top:9px;flex-wrap:wrap}
+.bn-card .date{font-size:11px;color:var(--muted);margin-left:auto}
+.bn-mini{border:1px solid var(--line);background:var(--panel2);color:var(--fg);border-radius:7px;padding:5px 10px;font:inherit;font-size:12px;cursor:pointer}
+.bn-mini:hover{border-color:var(--accent);color:var(--accent2)}
+.bn-artnote{border:1px solid var(--line);border-left:3px solid #ffd43b;border-radius:9px;background:var(--panel);padding:10px 13px;margin:0 0 12px}
+.bn-artnote .lbl{font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);font-weight:700}
+.bn-addbtn{display:inline-flex;align-items:center;gap:6px;border:1px dashed var(--line);background:transparent;color:var(--muted);border-radius:8px;padding:7px 12px;font:inherit;font-size:12.5px;cursor:pointer;margin:0 0 6px}
+.bn-addbtn:hover{border-color:var(--accent);color:var(--accent2)}
+.bn-badge{font-size:10px;font-weight:700;color:#8a6d1a;background:#ffe066;border-radius:10px;padding:1px 7px;margin-left:7px}
+.bn-toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);background:var(--fg-strong);color:var(--bg);padding:11px 17px;border-radius:9px;font-size:13px;z-index:4000;box-shadow:0 8px 24px rgba(0,0,0,.45);max-width:90%;display:none}
+#bn-notesbtn{width:100%;margin-top:8px}
+</style>
+</head><body>
 <button class="menubtn" id="menubtn">☰</button><div class="scrim" id="scrim"></div>
 <div class="app">
 <aside class="left" id="left">
@@ -330,4 +372,184 @@ canvas.addEventListener('click',e=>{const n=pick(evp(e));if(n&&n.id!==curSo())go
 window.addEventListener('resize',()=>{clearTimeout(window._gr);window._gr=setTimeout(buildGraph,200);});
 
 buildExplorer(); go({t:'home'});
-</script></body></html>
+</script>
+<script>
+
+(function(){
+var LSKEY='bonao_notes_v1';
+var COLORS={yellow:'#ffe066',green:'#b7efc5',pink:'#ffc9de',blue:'#a9d6ff'};
+function bnLoad(){try{var a=JSON.parse(localStorage.getItem(LSKEY)||'[]');return Array.isArray(a)?a:[];}catch(e){return[];}}
+function bnSave(){try{localStorage.setItem(LSKEY,JSON.stringify(NOTES));return true;}catch(e){bnToast('⚠️ Không lưu được — trình duyệt chặn bộ nhớ. Hãy mở qua link GitHub Pages.');return false;}}
+var NOTES=bnLoad();
+var bnLastQuery='';
+var bnST=null;
+function bnUid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7);}
+function bnArtIndex(so,dieu){var d=bySo[so];if(!d)return -1;for(var i=0;i<d.arts.length;i++){if(d.arts[i].d===dieu)return i;}return -1;}
+function bnDate(ts){try{var d=new Date(ts);function p(x){return(x<10?'0':'')+x;}return p(d.getDate())+'/'+p(d.getMonth()+1)+'/'+d.getFullYear()+' '+p(d.getHours())+':'+p(d.getMinutes());}catch(e){return'';}}
+var _toastT;
+function bnToast(msg){var t=document.getElementById('bn-toast');if(!t){t=document.createElement('div');t.id='bn-toast';t.className='bn-toast';document.body.appendChild(t);}t.textContent=msg;t.style.display='block';clearTimeout(_toastT);_toastT=setTimeout(function(){t.style.display='none';},3400);}
+
+function bnTextNodes(root){var out=[],w=document.createTreeWalker(root,NodeFilter.SHOW_TEXT,null,false),n;while(n=w.nextNode()){if(n.nodeValue&&!(n.parentNode&&n.parentNode.classList&&n.parentNode.classList.contains('bn-hl')))out.push(n);}return out;}
+function bnWrapQuote(root,quote,nid,color){
+  if(!quote)return false;
+  var nodes=bnTextNodes(root),concat='',map=[],i;
+  for(i=0;i<nodes.length;i++){map.push({node:nodes[i],start:concat.length});concat+=nodes[i].nodeValue;}
+  var idx=concat.indexOf(quote);
+  if(idx<0){quote=quote.trim();idx=concat.indexOf(quote);}
+  if(idx<0)return false;
+  var start=idx,end=idx+quote.length,segs=[],j;
+  for(j=0;j<map.length;j++){var ns=map[j].start,ne=ns+map[j].node.nodeValue.length;if(ne<=start||ns>=end)continue;segs.push({node:map[j].node,a:Math.max(start,ns)-ns,b:Math.min(end,ne)-ns});}
+  for(var k=segs.length-1;k>=0;k--){
+    var seg=segs[k],node=seg.node,a=seg.a,b=seg.b;
+    if(a>0){node=node.splitText(a);b=b-a;}
+    if(b<node.nodeValue.length){node.splitText(b);}
+    var mk=document.createElement('mark');mk.className='bn-hl';mk.setAttribute('data-nid',nid);mk.style.background=COLORS[color]||COLORS.yellow;
+    node.parentNode.insertBefore(mk,node);mk.appendChild(node);
+  }
+  return segs.length>0;
+}
+
+var bnPendingFlash=null;
+function bnAfterRender(){
+  bnUpdateBtn();
+  if(typeof view==='undefined'||!view)return;
+  if(view.t==='doc'){bnMarkDocRows();return;}
+  if(view.t!=='art')return;
+  var d=bySo[view.so];if(!d)return;var a=d.arts[view.i];if(!a)return;
+  var body=document.querySelector('.artbody');if(!body)return;
+  var al=NOTES.filter(function(n){return n.so===view.so&&n.dieu===a.d&&!n.quote;});
+  var html='';
+  al.forEach(function(n){html+='<div class="bn-artnote" data-nid="'+n.id+'"><div class="lbl">📌 Ghi chú của bạn</div><div class="nt" style="white-space:pre-wrap;margin-top:3px">'+esc(n.note)+'</div><div class="foot" style="display:flex;gap:8px;margin-top:7px"><button class="bn-mini" data-bn="edit" data-nid="'+n.id+'">Sửa</button><button class="bn-mini" data-bn="del" data-nid="'+n.id+'">Xóa</button></div></div>';});
+  html+='<button class="bn-addbtn" data-bn="addart">📌 Thêm ghi chú cho cả điều này</button><div style="font-size:11.5px;color:var(--muted);margin:2px 0 14px">💡 Mẹo: <b>bôi đen</b> một đoạn trong điều để bôi vàng + ghi chú riêng đoạn đó.</div>';
+  body.insertAdjacentHTML('beforebegin',html);
+  NOTES.filter(function(n){return n.so===view.so&&n.dieu===a.d&&n.quote;}).forEach(function(n){bnWrapQuote(body,n.quote,n.id,n.color);});
+  bnSetupSelection(body);
+  if(bnPendingFlash){var m=document.querySelector('mark.bn-hl[data-nid="'+bnPendingFlash+'"]');if(m){m.scrollIntoView({behavior:'smooth',block:'center'});m.classList.add('bn-flash');setTimeout(function(){m.classList.remove('bn-flash');},1700);}bnPendingFlash=null;}
+}
+function bnMarkDocRows(){
+  document.querySelectorAll('.artrow[data-go]').forEach(function(row){
+    try{var g=JSON.parse(row.getAttribute('data-go'));if(g.t!=='art')return;var d=bySo[g.so];var a=d.arts[g.i];var c=NOTES.filter(function(n){return n.so===g.so&&n.dieu===a.d;}).length;if(c>0){var tt=row.querySelector('.tt');if(tt&&!tt.querySelector('.bn-badge'))tt.insertAdjacentHTML('beforeend',' <span class="bn-badge">📝 '+c+'</span>');}}catch(e){}
+  });
+}
+
+var bnPendingQuote='';
+function bnSetupSelection(body){
+  body.addEventListener('mouseup',function(){
+    setTimeout(function(){
+      var sel=window.getSelection();var txt=sel?sel.toString():'';
+      bnRemoveTb();
+      if(!txt||txt.trim().length<2)return;
+      if(sel.rangeCount){var r=sel.getRangeAt(0);if(!body.contains(r.commonAncestorContainer))return;var rect=r.getBoundingClientRect();bnPendingQuote=txt;bnShowTb(rect);}
+    },10);
+  });
+}
+function bnRemoveTb(){var t=document.getElementById('bn-seltb');if(t)t.remove();}
+function bnShowTb(rect){
+  bnRemoveTb();var t=document.createElement('button');t.id='bn-seltb';t.className='bn-seltb';t.textContent='🖊️ Bôi vàng & ghi chú';document.body.appendChild(t);
+  var top=window.scrollY+rect.top-t.offsetHeight-8,left=window.scrollX+rect.left;
+  if(top<window.scrollY+4)top=window.scrollY+rect.bottom+8;
+  t.style.top=top+'px';t.style.left=Math.max(8,left)+'px';
+  t.addEventListener('click',function(ev){ev.stopPropagation();var q=bnPendingQuote;bnRemoveTb();try{window.getSelection().removeAllRanges();}catch(e){}var d=bySo[view.so],a=d.arts[view.i];bnOpenEditor({so:view.so,dieu:a.d,dtitle:a.t||'',quote:q});});
+}
+document.addEventListener('scroll',bnRemoveTb,true);
+document.addEventListener('mousedown',function(e){if(e.target.closest&&e.target.closest('#bn-seltb'))return;bnRemoveTb();},true);
+
+function bnOpenEditor(opts){
+  var color=opts.color||'yellow';
+  var ov=document.createElement('div');ov.className='bn-overlay';
+  ov.innerHTML='<div class="bn-modal"><h3>'+(opts.id?'Sửa ghi chú':'Ghi chú mới')+'</h3>'
+    +'<div style="font-size:12px;color:var(--muted)">'+esc(opts.so)+' · Điều '+opts.dieu+'. '+esc(opts.dtitle||'')+'</div>'
+    +(opts.quote?'<div class="bn-quote">“'+esc(opts.quote)+'”</div>':'<div style="height:6px"></div>')
+    +'<textarea class="bn-ta" id="bn-ta" placeholder="Nhập ghi chú / nhận xét / cách hiểu của bạn…"></textarea>'
+    +(opts.quote?'<div class="bn-colors"></div>':'')
+    +'<div class="bn-actions"><button class="bn-btn" data-bn="cancel">Hủy</button><button class="bn-btn primary" data-bn="savenote">Lưu</button></div></div>';
+  document.body.appendChild(ov);
+  var ta=ov.querySelector('#bn-ta');ta.value=opts.note||'';ta.focus();
+  var cw=ov.querySelector('.bn-colors');
+  if(cw){Object.keys(COLORS).forEach(function(c){var b=document.createElement('div');b.className='bn-color'+(c===color?' sel':'');b.style.background=COLORS[c];b.setAttribute('data-color',c);cw.appendChild(b);});
+    cw.addEventListener('click',function(e){var b=e.target.closest('.bn-color');if(!b)return;color=b.getAttribute('data-color');cw.querySelectorAll('.bn-color').forEach(function(x){x.classList.remove('sel');});b.classList.add('sel');});}
+  ov.addEventListener('click',function(e){
+    if(e.target===ov){ov.remove();return;}
+    var act=e.target.closest('[data-bn]');if(!act)return;var k=act.getAttribute('data-bn');
+    if(k==='cancel'){ov.remove();}
+    else if(k==='savenote'){
+      var note=ta.value.trim();
+      if(!note){bnToast('Hãy nhập nội dung ghi chú.');return;}
+      if(opts.id){var ex=NOTES.find(function(n){return n.id===opts.id;});if(ex){ex.note=note;ex.color=color;ex.ts=Date.now();}}
+      else{NOTES.push({id:bnUid(),so:opts.so,dieu:opts.dieu,dtitle:opts.dtitle||'',quote:opts.quote||'',note:note,color:color,ts:Date.now()});}
+      bnSave();ov.remove();render();bnToast('Đã lưu ghi chú.');
+    }
+  });
+}
+
+document.addEventListener('click',function(e){
+  var mk=e.target.closest('mark.bn-hl');var el=e.target.closest('[data-bn]');
+  if(mk&&!el){var nid=mk.getAttribute('data-nid');var n=NOTES.find(function(x){return x.id===nid;});if(n)bnOpenEditor({id:n.id,so:n.so,dieu:n.dieu,dtitle:n.dtitle,quote:n.quote,note:n.note,color:n.color});return;}
+  if(!el)return;var k=el.getAttribute('data-bn');
+  if(k==='addart'){var d=bySo[view.so],a=d.arts[view.i];bnOpenEditor({so:view.so,dieu:a.d,dtitle:a.t||'',quote:''});}
+  else if(k==='notes'){go({t:'notes'});}
+  else if(k==='open'){var so=el.getAttribute('data-so'),dieu=parseInt(el.getAttribute('data-dieu'),10),nid2=el.getAttribute('data-nid');var i=bnArtIndex(so,dieu);if(i>=0){bnPendingFlash=nid2;go({t:'art',so:so,i:i});}}
+  else if(k==='edit'){var n3=NOTES.find(function(x){return x.id===el.getAttribute('data-nid');});if(n3)bnOpenEditor({id:n3.id,so:n3.so,dieu:n3.dieu,dtitle:n3.dtitle,quote:n3.quote,note:n3.note,color:n3.color});}
+  else if(k==='del'){var id4=el.getAttribute('data-nid');if(confirm('Xóa ghi chú này?')){NOTES=NOTES.filter(function(x){return x.id!==id4;});bnSave();render();bnToast('Đã xóa.');}}
+  else if(k==='export'){bnExport();}
+  else if(k==='import'){var fi=document.getElementById('bn-import-file');if(fi)fi.click();}
+});
+
+function bnSearch(q){
+  q=(q||'').trim();
+  if(!q)return NOTES.slice().sort(function(a,b){return b.ts-a.ts;});
+  var toks=norm(q).split(/\s+/).filter(Boolean),nq=norm(q),scored=[];
+  NOTES.forEach(function(n){
+    var hayN=norm(n.note||''),hayQ=norm(n.quote||''),hayM=norm((n.so||'')+' dieu '+n.dieu+' '+(n.dtitle||''));
+    var sc=0,all=true;
+    toks.forEach(function(t){var hit=false;if(hayN.indexOf(t)>=0){sc+=3;hit=true;}if(hayQ.indexOf(t)>=0){sc+=2;hit=true;}if(hayM.indexOf(t)>=0){sc+=1.5;hit=true;}if(!hit)all=false;});
+    if(hayN.indexOf(nq)>=0||hayQ.indexOf(nq)>=0)sc+=4;
+    if(sc>0)scored.push({n:n,sc:sc,all:all});
+  });
+  scored.sort(function(a,b){if(a.all!==b.all)return a.all?-1:1;return b.sc-a.sc;});
+  return scored.map(function(x){return x.n;});
+}
+function bnListHTML(q){
+  var list=bnSearch(q),h='';
+  h+='<div style="font-size:12px;color:var(--muted);margin:2px 0 6px">'+list.length+' kết quả'+(q?' cho "'+esc(q)+'"':'')+'</div>';
+  if(!NOTES.length){return '<div class="callout info"><div class="ct">Chưa có ghi chú nào</div><p>Mở một <b>Điều</b> bất kỳ → <b>bôi đen</b> đoạn muốn lưu → bấm <b>“🖊️ Bôi vàng &amp; ghi chú”</b>. Hoặc dùng <b>“📌 Thêm ghi chú cho cả điều này”</b> ở đầu mỗi điều.</p></div>';}
+  if(!list.length)return h+'<p class="artctx" style="color:var(--muted)">Không có ghi chú khớp. Thử từ khóa khác.</p>';
+  list.forEach(function(n){
+    h+='<div class="bn-card"><div class="h"><span class="so-badge">'+esc(n.so)+'</span><span class="mono">Điều '+n.dieu+'</span><span style="font-size:13px">'+esc(n.dtitle||'')+'</span></div>';
+    if(n.quote)h+='<div class="q">“'+esc(n.quote)+'”</div>';
+    if(n.note)h+='<div class="nt">'+esc(n.note)+'</div>';
+    h+='<div class="foot"><button class="bn-mini" data-bn="open" data-so="'+esc(n.so)+'" data-dieu="'+n.dieu+'" data-nid="'+n.id+'">→ Mở điều khoản</button><button class="bn-mini" data-bn="edit" data-nid="'+n.id+'">Sửa</button><button class="bn-mini" data-bn="del" data-nid="'+n.id+'">Xóa</button><span class="date">'+bnDate(n.ts)+'</span></div></div>';
+  });
+  return h;
+}
+function bnRenderNotes(){
+  var m=document.querySelector('#main');
+  var h='<h1 class="title">📝 Ghi chú của tôi</h1>';
+  h+='<div class="pmeta"><span>'+NOTES.length+' ghi chú</span><span class="sep">·</span><span>Lưu trong trình duyệt này</span></div>';
+  h+='<div class="bn-searchbox"><input id="bn-search" type="search" placeholder="Gõ từ khóa hoặc câu gợi ý để tìm ghi chú… (vd: chỉ định thầu, tạm ứng, nhóm B)" value="'+esc(bnLastQuery)+'"></div>';
+  h+='<div class="bn-notebar"><button class="bn-mini" data-bn="export">⬇ Xuất (.json)</button><button class="bn-mini" data-bn="import">⬆ Nhập</button><input type="file" id="bn-import-file" accept="application/json,.json" style="display:none"><span style="font-size:11.5px;color:var(--muted);margin-left:auto">Ghi chú lưu trên trình duyệt &amp; link này — nên dùng link GitHub Pages để không mất.</span></div>';
+  h+='<div id="bn-list">'+bnListHTML(bnLastQuery)+'</div>';
+  m.innerHTML=h;
+  var si=document.getElementById('bn-search');
+  if(si){si.addEventListener('input',function(){bnLastQuery=si.value;clearTimeout(bnST);bnST=setTimeout(function(){var lw=document.getElementById('bn-list');if(lw)lw.innerHTML=bnListHTML(bnLastQuery);},170);});}
+  var fi=document.getElementById('bn-import-file');if(fi)fi.addEventListener('change',bnImport);
+  var toc=document.getElementById('toc');if(toc)toc.innerHTML='<span style="color:var(--muted);font-size:12px">Ghi chú của bạn ('+NOTES.length+')</span>';
+}
+function bnExport(){try{var blob=new Blob([JSON.stringify(NOTES,null,2)],{type:'application/json'});var url=URL.createObjectURL(blob);var a=document.createElement('a');a.href=url;a.download='bo-nao-ghi-chu-'+new Date().toISOString().slice(0,10)+'.json';document.body.appendChild(a);a.click();a.remove();setTimeout(function(){URL.revokeObjectURL(url);},4000);bnToast('Đã xuất '+NOTES.length+' ghi chú.');}catch(e){bnToast('Không xuất được.');}}
+function bnImport(e){var f=e.target.files&&e.target.files[0];if(!f)return;var rd=new FileReader();rd.onload=function(){try{var arr=JSON.parse(rd.result);if(!Array.isArray(arr))throw 0;var byId={},added=0;NOTES.forEach(function(n){byId[n.id]=n;});arr.forEach(function(n){if(n&&n.id){if(!byId[n.id]){byId[n.id]=n;added++;}else if((n.ts||0)>(byId[n.id].ts||0)){byId[n.id]=n;}}});NOTES=Object.keys(byId).map(function(k){return byId[k];});bnSave();render();bnToast('Đã nhập: thêm '+added+' (tổng '+NOTES.length+').');}catch(err){bnToast('File không hợp lệ.');}};rd.readAsText(f);}
+
+function bnUpdateBtn(){var b=document.getElementById('bn-notesbtn');if(b)b.textContent='📝 Ghi chú của tôi ('+NOTES.length+')';}
+
+// init: sidebar button + patch render
+(function init(){
+  var tr=document.querySelector('.toolrow');
+  if(tr&&!document.getElementById('bn-notesbtn')){var b=document.createElement('button');b.className='tbtn';b.id='bn-notesbtn';b.setAttribute('data-bn','notes');b.textContent='📝 Ghi chú của tôi (0)';tr.insertAdjacentElement('afterend',b);}
+  bnUpdateBtn();
+  var _render=render;
+  render=function(){ if(typeof view!=='undefined'&&view&&view.t==='notes'){try{bnRenderNotes();}catch(e){console.error(e);}return;} _render.apply(this,arguments); try{bnAfterRender();}catch(e){console.error(e);} };
+  try{bnAfterRender();}catch(e){}
+})();
+})();
+
+</script>
+</body></html>
