@@ -146,6 +146,13 @@ mark.bn-hl.bn-flash{animation:bnflash 1.5s ease}
 .bn-badge{font-size:10px;font-weight:700;color:#8a6d1a;background:#ffe066;border-radius:10px;padding:1px 7px;margin-left:7px}
 .bn-toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);background:var(--fg-strong);color:var(--bg);padding:11px 17px;border-radius:9px;font-size:13px;z-index:4000;box-shadow:0 8px 24px rgba(0,0,0,.45);max-width:90%;display:none}
 #bn-notesbtn{width:100%;margin-top:8px}
+.bn-pop{position:absolute;z-index:2500;max-width:360px;min-width:220px;background:var(--panel);border:1px solid var(--line);border-radius:11px;box-shadow:0 14px 42px rgba(0,0,0,.5);padding:12px 14px}
+.bn-pop-lbl{font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);font-weight:700;margin-bottom:6px}
+.bn-pop-q{background:var(--panel2);border-left:3px solid #ffe066;border-radius:5px;padding:6px 9px;font-size:12px;color:var(--muted);margin:0 0 8px;max-height:110px;overflow:auto;white-space:pre-wrap}
+.bn-pop-nt{font-size:14px;color:var(--fg);white-space:pre-wrap;line-height:1.6}
+.bn-pop-foot{display:flex;gap:7px;margin-top:11px;flex-wrap:wrap}
+@keyframes bnflashbox{0%,100%{box-shadow:none}30%{box-shadow:0 0 0 3px rgba(255,212,59,.85)}}
+.bn-artnote.bn-flash{animation:bnflashbox 1.6s ease}
 </style>
 </head><body>
 <button class="menubtn" id="menubtn">☰</button><div class="scrim" id="scrim"></div>
@@ -424,7 +431,13 @@ function bnAfterRender(){
   body.insertAdjacentHTML('beforebegin',html);
   NOTES.filter(function(n){return n.so===view.so&&n.dieu===a.d&&n.quote;}).forEach(function(n){bnWrapQuote(body,n.quote,n.id,n.color);});
   bnSetupSelection(body);
-  if(bnPendingFlash){var m=document.querySelector('mark.bn-hl[data-nid="'+bnPendingFlash+'"]');if(m){m.scrollIntoView({behavior:'smooth',block:'center'});m.classList.add('bn-flash');setTimeout(function(){m.classList.remove('bn-flash');},1700);}bnPendingFlash=null;}
+  if(bnPendingFlash){
+    var nf=NOTES.find(function(x){return x.id===bnPendingFlash;});
+    var m=document.querySelector('mark.bn-hl[data-nid="'+bnPendingFlash+'"]');
+    if(m){m.scrollIntoView({behavior:'smooth',block:'center'});m.classList.add('bn-flash');setTimeout(function(){m.classList.remove('bn-flash');},1800);(function(mm,nn){setTimeout(function(){if(nn)bnShowNoteView(nn,mm);},440);})(m,nf);}
+    else{var ab=document.querySelector('.bn-artnote[data-nid="'+bnPendingFlash+'"]');if(ab){ab.scrollIntoView({behavior:'smooth',block:'center'});ab.classList.add('bn-flash');setTimeout(function(){ab.classList.remove('bn-flash');},1800);}}
+    bnPendingFlash=null;
+  }
 }
 function bnMarkDocRows(){
   document.querySelectorAll('.artrow[data-go]').forEach(function(row){
@@ -452,7 +465,7 @@ function bnShowTb(rect){
   t.addEventListener('click',function(ev){ev.stopPropagation();var q=bnPendingQuote;bnRemoveTb();try{window.getSelection().removeAllRanges();}catch(e){}var d=bySo[view.so],a=d.arts[view.i];bnOpenEditor({so:view.so,dieu:a.d,dtitle:a.t||'',quote:q});});
 }
 document.addEventListener('scroll',bnRemoveTb,true);
-document.addEventListener('mousedown',function(e){if(e.target.closest&&e.target.closest('#bn-seltb'))return;bnRemoveTb();},true);
+document.addEventListener('mousedown',function(e){if(!(e.target.closest&&e.target.closest('#bn-seltb')))bnRemoveTb();var pp=document.getElementById('bn-pop');if(pp&&!(e.target.closest&&e.target.closest('#bn-pop'))&&!(e.target.closest&&e.target.closest('mark.bn-hl')))bnCloseView();},true);
 
 function bnOpenEditor(opts){
   var color=opts.color||'yellow';
@@ -482,15 +495,34 @@ function bnOpenEditor(opts){
   });
 }
 
+function bnCloseView(){var p=document.getElementById('bn-pop');if(p)p.remove();}
+function bnShowNoteView(n,anchor){
+  bnCloseView();
+  var pop=document.createElement('div');pop.className='bn-pop';pop.id='bn-pop';
+  pop.innerHTML='<div class="bn-pop-lbl">📝 Ghi chú của bạn</div>'
+    +(n.quote?'<div class="bn-pop-q">“'+esc(n.quote)+'”</div>':'')
+    +'<div class="bn-pop-nt">'+esc(n.note||'')+'</div>'
+    +'<div class="bn-pop-foot"><button class="bn-mini" data-bn="editview" data-nid="'+n.id+'">✏️ Sửa</button><button class="bn-mini" data-bn="delview" data-nid="'+n.id+'">🗑 Xóa</button><button class="bn-mini" data-bn="closeview">Đóng</button></div>';
+  document.body.appendChild(pop);
+  if(anchor){var r=anchor.getBoundingClientRect();
+    var left=window.scrollX+r.left;left=Math.max(10,Math.min(left,window.scrollX+window.innerWidth-pop.offsetWidth-12));
+    var top=window.scrollY+r.bottom+8;
+    if(r.bottom+pop.offsetHeight+14>window.innerHeight&&r.top-pop.offsetHeight-8>0)top=window.scrollY+r.top-pop.offsetHeight-8;
+    pop.style.left=left+'px';pop.style.top=top+'px';
+  }else{pop.style.left='50%';pop.style.top=(window.scrollY+110)+'px';pop.style.transform='translateX(-50%)';}
+}
 document.addEventListener('click',function(e){
   var mk=e.target.closest('mark.bn-hl');var el=e.target.closest('[data-bn]');
-  if(mk&&!el){var nid=mk.getAttribute('data-nid');var n=NOTES.find(function(x){return x.id===nid;});if(n)bnOpenEditor({id:n.id,so:n.so,dieu:n.dieu,dtitle:n.dtitle,quote:n.quote,note:n.note,color:n.color});return;}
+  if(mk&&!el){var nid=mk.getAttribute('data-nid');var n=NOTES.find(function(x){return x.id===nid;});if(n)bnShowNoteView(n,mk);return;}
   if(!el)return;var k=el.getAttribute('data-bn');
   if(k==='addart'){var d=bySo[view.so],a=d.arts[view.i];bnOpenEditor({so:view.so,dieu:a.d,dtitle:a.t||'',quote:''});}
   else if(k==='notes'){go({t:'notes'});}
   else if(k==='open'){var so=el.getAttribute('data-so'),dieu=parseInt(el.getAttribute('data-dieu'),10),nid2=el.getAttribute('data-nid');var i=bnArtIndex(so,dieu);if(i>=0){bnPendingFlash=nid2;go({t:'art',so:so,i:i});}}
   else if(k==='edit'){var n3=NOTES.find(function(x){return x.id===el.getAttribute('data-nid');});if(n3)bnOpenEditor({id:n3.id,so:n3.so,dieu:n3.dieu,dtitle:n3.dtitle,quote:n3.quote,note:n3.note,color:n3.color});}
   else if(k==='del'){var id4=el.getAttribute('data-nid');if(confirm('Xóa ghi chú này?')){NOTES=NOTES.filter(function(x){return x.id!==id4;});bnSave();render();bnToast('Đã xóa.');}}
+  else if(k==='editview'){var nv=NOTES.find(function(x){return x.id===el.getAttribute('data-nid');});bnCloseView();if(nv)bnOpenEditor({id:nv.id,so:nv.so,dieu:nv.dieu,dtitle:nv.dtitle,quote:nv.quote,note:nv.note,color:nv.color});}
+  else if(k==='delview'){var idv=el.getAttribute('data-nid');if(confirm('Xóa ghi chú này?')){NOTES=NOTES.filter(function(x){return x.id!==idv;});bnSave();bnCloseView();render();bnToast('Đã xóa.');}}
+  else if(k==='closeview'){bnCloseView();}
   else if(k==='export'){bnExport();}
   else if(k==='import'){var fi=document.getElementById('bn-import-file');if(fi)fi.click();}
 });
@@ -546,7 +578,7 @@ function bnUpdateBtn(){var b=document.getElementById('bn-notesbtn');if(b)b.textC
   if(tr&&!document.getElementById('bn-notesbtn')){var b=document.createElement('button');b.className='tbtn';b.id='bn-notesbtn';b.setAttribute('data-bn','notes');b.textContent='📝 Ghi chú của tôi (0)';tr.insertAdjacentElement('afterend',b);}
   bnUpdateBtn();
   var _render=render;
-  render=function(){ if(typeof view!=='undefined'&&view&&view.t==='notes'){try{bnRenderNotes();}catch(e){console.error(e);}return;} _render.apply(this,arguments); try{bnAfterRender();}catch(e){console.error(e);} };
+  render=function(){ bnCloseView();bnRemoveTb(); if(typeof view!=='undefined'&&view&&view.t==='notes'){try{bnRenderNotes();}catch(e){console.error(e);}return;} _render.apply(this,arguments); try{bnAfterRender();}catch(e){console.error(e);} };
   try{bnAfterRender();}catch(e){}
 })();
 })();
