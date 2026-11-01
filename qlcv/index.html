@@ -492,6 +492,7 @@ table.tbl tbody tr:last-child td{border-bottom:none}
       <div class="pagetitle"><span class="crumb" id="crumb">Ban QLDA xây dựng Nếnh</span><span id="ptitle">Tổng quan</span></div>
       <div class="search"><span>%ICON_SEARCH%</span><input id="global-search" placeholder="Tìm công việc, chuyên viên..." /></div>
       <div class="topbar-actions">
+        <button class="btn-icon" onclick="Bulletin.open()" title="Bản tin nhắc việc (dán vào Zalo)" style="font-size:16px">📢</button>
         <button class="btn-icon" onclick="UI.toggleTheme()" title="Giao diện sáng/tối">%ICON_MOON%</button>
         <div class="dd">
           <button class="btn-icon" id="notif-btn" onclick="UI.toggleNotif()" style="position:relative" title="Thông báo">%ICON_BELL%<span class="notif-badge hidden" id="notif-badge">0</span></button>
@@ -1036,6 +1037,7 @@ const Dashboard = {
         <div><h1>${greet}, ${U.esc(fname)}! 👋</h1>
         <p>${broad?'Tổng quan toàn bộ công việc của '+U.esc(Store.settings().orgShort)+'.':'Tổng quan công việc liên quan đến bạn.'} Hôm nay là ${new Date().toLocaleDateString('vi-VN',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}.</p></div>
         <div class="page-actions">
+          <button class="btn btn-ghost" onclick="Bulletin.open()">${icon('copy')}Bản tin nhắc việc</button>
           ${Auth.can('task.create')?'<button class="btn btn-primary" onclick="Tasks.openForm()">'+icon('plus')+'Giao việc mới</button>':''}
           <button class="btn btn-ghost" onclick="App.go('gantt')">${icon('gantt')}Xem Gantt</button>
         </div>
@@ -1510,6 +1512,57 @@ const KPI = {
   }
 };
 /* ------------------------------- TRANG: QUẢN LÝ TÀI KHOẢN ------------------------------- */
+/* ------------------------------- BẢN TIN NHẮC VIỆC (dán Zalo) ------------------------------- */
+const Bulletin = {
+  nm(t){ const u=Store.user(t.assignee); return u?u.fullName:'(chưa giao)'; },
+  build(d, opts){
+    const vis=Tasks.visible();
+    const org=Store.settings().orgShort||'Ban QLDA';
+    const dObj=new Date(d+'T00:00:00');
+    let wd=dObj.toLocaleDateString('vi-VN',{weekday:'long',day:'2-digit',month:'2-digit',year:'numeric'});
+    wd=wd.charAt(0).toUpperCase()+wd.slice(1);
+    const byPrio=(a,b)=>PRIORITY[b.priority].w-PRIORITY[a.priority].w;
+    const byDue=(a,b)=>(a.due||'').localeCompare(b.due||'');
+    const line=(t,ex)=>'• '+t.title+' — '+Bulletin.nm(t)+(ex?' ('+ex+')':'');
+    const overdue=vis.filter(t=>t.status!=='done'&&t.due&&t.due<d).sort(byDue);
+    const dueToday=vis.filter(t=>t.status!=='done'&&t.due===d).sort(byPrio);
+    const dueSoon=vis.filter(t=>{ if(t.status==='done'||!t.due) return false; const n=U.days(U.parse(d),U.parse(t.due)); return n>=1&&n<=3; }).sort(byDue);
+    const doneDay=vis.filter(t=>t.status==='done'&&t.completedAt===d).sort(byPrio);
+    let s='📋 BẢN TIN NHẮC VIỆC — '+org+'\n🗓 '+wd+'\n';
+    let any=false;
+    if(opts.overdue&&overdue.length){ any=true; s+='\n🔴 QUÁ HẠN ('+overdue.length+')\n'+overdue.map(t=>line(t,'hạn '+U.fmtShort(t.due)+' · trễ '+Math.abs(U.days(U.parse(d),U.parse(t.due)))+' ngày · '+(t.progress||0)+'%')).join('\n')+'\n'; }
+    if(opts.today&&dueToday.length){ any=true; s+='\n🟡 ĐẾN HẠN HÔM NAY ('+dueToday.length+')\n'+dueToday.map(t=>line(t,'tiến độ '+(t.progress||0)+'%')).join('\n')+'\n'; }
+    if(opts.soon&&dueSoon.length){ any=true; s+='\n🟠 SẮP ĐẾN HẠN — trong 3 ngày ('+dueSoon.length+')\n'+dueSoon.map(t=>line(t,'hạn '+U.fmtShort(t.due)+' · còn '+U.days(U.parse(d),U.parse(t.due))+' ngày')).join('\n')+'\n'; }
+    if(opts.done&&doneDay.length){ any=true; s+='\n✅ VỪA HOÀN THÀNH ('+doneDay.length+')\n'+doneDay.map(t=>line(t,'')).join('\n')+'\n'; }
+    if(!any) s+='\n✅ Không có việc cần nhắc cho ngày này. Cảm ơn cả nhóm!\n';
+    s+='\n— Nguồn: phần mềm QLCV · '+org;
+    return s;
+  },
+  open(){
+    const opts={overdue:true,today:true,soon:true,done:true};
+    let d=U.iso(U.today());
+    UI.modal({ size:'lg', title:'📢 Bản tin nhắc việc', sub:'Tổng hợp để dán vào nhóm Zalo / Telegram',
+      body:`
+        <div class="toolbar" style="margin-bottom:12px;gap:14px;flex-wrap:wrap;align-items:center">
+          <label class="text-sm" style="display:flex;align-items:center;gap:6px">Ngày:<input class="input" type="date" id="bl-date" value="${d}" style="width:auto"></label>
+          <label class="text-sm" style="display:flex;align-items:center;gap:5px"><input type="checkbox" id="bl-overdue" checked> Quá hạn</label>
+          <label class="text-sm" style="display:flex;align-items:center;gap:5px"><input type="checkbox" id="bl-today" checked> Đến hạn</label>
+          <label class="text-sm" style="display:flex;align-items:center;gap:5px"><input type="checkbox" id="bl-soon" checked> Sắp đến hạn</label>
+          <label class="text-sm" style="display:flex;align-items:center;gap:5px"><input type="checkbox" id="bl-done" checked> Hoàn thành</label>
+        </div>
+        <textarea id="bl-text" class="input" style="width:100%;min-height:320px;resize:vertical;font-size:13.5px;line-height:1.6;white-space:pre-wrap"></textarea>
+        <div class="hint" style="margin-top:8px">Có thể chỉnh nội dung trước khi sao chép. Sau khi bấm <b>Sao chép</b>, mở nhóm Zalo và dán (Ctrl/Cmd + V).</div>`,
+      foot:'<button class="btn btn-ghost" data-close>Đóng</button><button class="btn btn-primary" data-copy>'+icon('copy')+'Sao chép bản tin</button>',
+      onMount:(ov,close)=>{
+        const ta=ov.querySelector('#bl-text');
+        const recompose=()=>{ opts.overdue=ov.querySelector('#bl-overdue').checked; opts.today=ov.querySelector('#bl-today').checked; opts.soon=ov.querySelector('#bl-soon').checked; opts.done=ov.querySelector('#bl-done').checked; d=ov.querySelector('#bl-date').value||U.iso(U.today()); ta.value=Bulletin.build(d,opts); };
+        ov.querySelectorAll('#bl-date,#bl-overdue,#bl-today,#bl-soon,#bl-done').forEach(el=>el.addEventListener('change',recompose));
+        recompose();
+        ov.querySelector('[data-copy]').onclick=async()=>{ const txt=ta.value; let ok=false; try{ await navigator.clipboard.writeText(txt); ok=true; }catch(e){ try{ ta.focus(); ta.select(); ok=document.execCommand('copy'); }catch(_){} } UI.toast(ok?'Đã sao chép':'Chưa sao chép tự động', ok?'Mở nhóm Zalo và dán (Ctrl/Cmd + V).':'Hãy bôi đen nội dung rồi Ctrl/Cmd + C.', ok?'ok':'warn'); };
+      }
+    });
+  }
+};
 /* ------------------------------- ĐĂNG KÝ & QUÊN MẬT KHẨU ------------------------------- */
 const Register = {
   open(){
