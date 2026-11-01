@@ -1,0 +1,14 @@
+# Hệ thống
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Trình soạn thảo
+.vscode/
+.idea/
+*.swp
+*~
+
+# Nhật ký / tạm
+*.log
+node_modules/
