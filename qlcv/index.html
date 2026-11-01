@@ -3,14 +3,14 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<meta name="description" content="Hệ thống phân công, quản lý, nhắc việc và đánh giá KPI cho Ban Quản lý dự án đầu tư xây dựng" />
-<title>QLCV – Ban QLDA đầu tư xây dựng</title>
+<meta name="description" content="Hệ thống phân công, quản lý, nhắc việc và đánh giá KPI cho Ban Quản lý dự án xây dựng Nếnh" />
+<title>QLCV – Ban QLDA xây dựng Nếnh</title>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap" rel="stylesheet" />
 <style>
 /* =========================================================================
-   QLCV – Hệ thống Quản lý Công việc Ban QLDA đầu tư xây dựng
+   QLCV – Hệ thống Quản lý Công việc Ban QLDA xây dựng Nếnh
    Thiết kế: Hệ thống thiết kế tùy biến, tự chứa, không phụ thuộc thư viện
    ========================================================================= */
 
@@ -438,7 +438,7 @@ table.tbl tbody tr:last-child td{border-bottom:none}
   <div class="login-left">
     <div class="login-brand">
       <span class="logo" id="login-logo"></span>
-      <div><div class="nm">BAN QUẢN LÝ DỰ ÁN<br/>ĐẦU TƯ XÂY DỰNG</div></div>
+      <div><div class="nm">BAN QUẢN LÝ DỰ ÁN<br/>XÂY DỰNG NẾNH</div></div>
     </div>
     <div class="login-hero">
       <h1>Hệ thống Quản lý Công việc &amp; Đánh giá KPI</h1>
@@ -449,7 +449,7 @@ table.tbl tbody tr:last-child td{border-bottom:none}
         <div class="f">%ICON_SHIELD%<div><b>Phân quyền chi tiết</b><span>Quản trị viên kiểm soát quyền của từng tài khoản.</span></div></div>
       </div>
     </div>
-    <div class="login-foot">© <span id="yr"></span> Ban QLDA đầu tư xây dựng · Phiên bản 1.0</div>
+    <div class="login-foot">© <span id="yr"></span> Ban QLDA xây dựng Nếnh · Phiên bản 1.0</div>
   </div>
   <div class="login-right">
     <div class="login-box">
@@ -489,7 +489,7 @@ table.tbl tbody tr:last-child td{border-bottom:none}
   <div class="main">
     <header class="topbar">
       <button class="btn-icon menu-btn" onclick="UI.toggleSidebar()">%ICON_MENU%</button>
-      <div class="pagetitle"><span class="crumb" id="crumb">Ban QLDA đầu tư xây dựng</span><span id="ptitle">Tổng quan</span></div>
+      <div class="pagetitle"><span class="crumb" id="crumb">Ban QLDA xây dựng Nếnh</span><span id="ptitle">Tổng quan</span></div>
       <div class="search"><span>%ICON_SEARCH%</span><input id="global-search" placeholder="Tìm công việc, chuyên viên..." /></div>
       <div class="topbar-actions">
         <button class="btn-icon" onclick="UI.toggleTheme()" title="Giao diện sáng/tối">%ICON_MOON%</button>
@@ -522,7 +522,7 @@ table.tbl tbody tr:last-child td{border-bottom:none}
 
 <script>
 /* ============================================================================
-   QLCV – Ứng dụng quản lý công việc & KPI | Ban QLDA đầu tư xây dựng
+   QLCV – Ứng dụng quản lý công việc & KPI | Ban QLDA xây dựng Nếnh
    Toàn bộ logic trong một file, không phụ thuộc thư viện ngoài.
    ============================================================================ */
 'use strict';
@@ -687,7 +687,9 @@ const U = {
 /* ------------------------------- LỚP DỮ LIỆU ------------------------------- */
 const Store = {
   data:null,
-  load(){ try{ const raw=localStorage.getItem(APP.key); if(raw){ this.data=JSON.parse(raw); } }catch(e){ console.warn('Load lỗi',e);} if(!this.data){ this.seed(); } if(!this.data.settings) this.data.settings={}; return this.data; },
+  load(){ try{ const raw=localStorage.getItem(APP.key); if(raw){ this.data=JSON.parse(raw); } }catch(e){ console.warn('Load lỗi',e);} if(!this.data){ this.seed(); } if(!this.data.settings) this.data.settings={};
+    if(this.data.settings.orgName==='BAN QUẢN LÝ DỰ ÁN ĐẦU TƯ XÂY DỰNG'){ this.data.settings.orgName='BAN QUẢN LÝ DỰ ÁN XÂY DỰNG NẾNH'; try{this.save();}catch(e){} }
+    return this.data; },
   save(){ try{ localStorage.setItem(APP.key, JSON.stringify(this.data)); }catch(e){ UI.toast('Lỗi lưu dữ liệu','Bộ nhớ trình duyệt có thể đã đầy.','err'); } },
   reset(){ localStorage.removeItem(APP.key); this.data=null; this.seed(); this.save(); },
   // getters
@@ -737,7 +739,7 @@ const Store = {
       mkTask({ title:'Kiểm tra an toàn lao động công trường', projectId:'p3', assignee:uid(7), assigner:uid(3), priority:'high', status:'done', progress:100, start:U.iso(U.addDays(t,-7)), due:U.iso(U.addDays(t,-6)), completedAt:U.iso(U.addDays(t,-6)), desc:'Kiểm tra định kỳ công tác an toàn, vệ sinh lao động.' }),
     ];
     this.data={ users, tasks, plans:[], notifications:[], auditLog:[], settings:{
-      orgName:'BAN QUẢN LÝ DỰ ÁN ĐẦU TƯ XÂY DỰNG', orgShort:'Ban QLDA', projects,
+      orgName:'BAN QUẢN LÝ DỰ ÁN XÂY DỰNG NẾNH', orgShort:'Ban QLDA', projects,
       kpiWeights:{ onTime:50, completion:30, progress:10, volume:10 }, theme:'light'
     }};
     Notif.regenerate(true);

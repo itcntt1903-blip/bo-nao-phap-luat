@@ -1,8 +1,8 @@
 # QLCV – Hệ thống Quản lý Công việc & Đánh giá KPI
 
-**Ban Quản lý dự án đầu tư xây dựng**
+**Ban Quản lý dự án xây dựng Nếnh**
 
-Ứng dụng web phân công, quản lý, nhắc việc và đánh giá KPI công việc hằng ngày cho từng chuyên viên thuộc Ban QLDA đầu tư xây dựng. Giao diện tiếng Việt, trực quan bằng biểu đồ Gantt, phân quyền chi tiết đến từng chức năng.
+Ứng dụng web phân công, quản lý, nhắc việc và đánh giá KPI công việc hằng ngày cho từng chuyên viên thuộc Ban QLDA xây dựng Nếnh. Giao diện tiếng Việt, trực quan bằng biểu đồ Gantt, phân quyền chi tiết đến từng chức năng.
 
 > Toàn bộ ứng dụng nằm trong **một file `index.html` duy nhất**, không cần cài đặt, không cần máy chủ. Mở bằng trình duyệt là chạy được ngay.
 
