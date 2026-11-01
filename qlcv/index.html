@@ -409,6 +409,26 @@ table.tbl tbody tr:last-child td{border-bottom:none}
   .card{box-shadow:none;border-color:#ccc}
   .print-only{display:block}
 }
+/* ----- Lịch Kế hoạch tháng ----- */
+.mgrid{display:grid;grid-template-columns:repeat(7,1fr);gap:8px}
+.mgrid.mhead{margin-bottom:8px;gap:8px}
+.mwd{text-align:center;font-size:12px;font-weight:700;color:var(--text-3);padding:4px 0}
+.mc{min-height:104px;border:1px solid var(--border);border-radius:10px;padding:7px;background:var(--surface);cursor:pointer;display:flex;flex-direction:column;gap:4px;transition:border-color .12s,box-shadow .12s;overflow:hidden}
+.mc:hover{border-color:var(--brand-400);box-shadow:var(--shadow-sm)}
+.mc.empty{background:transparent;border:1px dashed var(--border);cursor:default}
+.mc.empty:hover{box-shadow:none;border-color:var(--border)}
+.mc.today{border-color:var(--brand-500);box-shadow:0 0 0 1px var(--brand-500) inset}
+.mc .md{display:flex;align-items:center;justify-content:space-between;font-weight:700;font-size:13px}
+.mc.today .md span:first-child{color:var(--brand-600)}
+.mc .mcnt{font-size:10px;font-weight:700;color:#fff;background:var(--brand-500);border-radius:999px;padding:1px 7px}
+.mchip{font-size:11px;line-height:1.3;padding:3px 6px;border-radius:5px;background:var(--surface-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer}
+.mchip:hover{background:var(--surface-3)}
+.mmore{font-size:10.5px;color:var(--text-3);padding-left:2px}
+@media(max-width:720px){ .mc{min-height:68px} .mchip{display:none} .mc .md{font-size:12px} }
+/* ----- Phân quyền theo tab ----- */
+.tabperm-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px 0;border-bottom:1px solid var(--border);flex-wrap:wrap}
+.tabperm-row:last-child{border-bottom:0}
+.tabperm-name{font-weight:600;font-size:14px}
 </style>
 </head>
 <body>
@@ -447,10 +467,9 @@ table.tbl tbody tr:last-child td{border-bottom:none}
         </div>
         <button class="btn btn-primary w-full" type="submit" style="justify-content:center;padding:11px">Đăng nhập</button>
       </form>
-      <div class="login-demo">
-        <b>Tài khoản quản trị mặc định:</b><br/>
-        Tài khoản: <b>admin</b> &nbsp;·&nbsp; Mật khẩu: <b>admin@123</b><br/>
-        <span style="color:var(--text-3)">Vui lòng đổi mật khẩu ngay sau lần đăng nhập đầu tiên.</span>
+      <div style="display:flex;gap:10px;margin-top:18px">
+        <button type="button" class="btn btn-ghost" style="flex:1;justify-content:center" onclick="Register.open()">Tạo tài khoản mới</button>
+        <button type="button" class="btn btn-ghost" style="flex:1;justify-content:center" onclick="Forgot.open()">Quên mật khẩu?</button>
       </div>
     </div>
   </div>
@@ -593,6 +612,8 @@ const PERM_GROUPS = [
   { key:'plan', label:'Kế hoạch & Nhắc việc', icon:'calendar', perms:[
     { key:'plan.view_all', label:'Xem kế hoạch ngày toàn Ban' },
     { key:'plan.manage',   label:'Lập & điều chỉnh kế hoạch ngày' },
+    { key:'monthly.view',  label:'Xem kế hoạch tháng' },
+    { key:'monthly.manage',label:'Lập & điều chỉnh kế hoạch tháng' },
   ]},
   { key:'kpi', label:'KPI & Báo cáo', icon:'kpi', perms:[
     { key:'kpi.view_all',  label:'Xem KPI toàn bộ chuyên viên' },
@@ -609,11 +630,24 @@ const PERM_LABEL = {}; PERM_GROUPS.forEach(g=>g.perms.forEach(p=>PERM_LABEL[p.ke
 
 const ROLE_PERMS = {
   admin: ALL_PERMS.slice(),
-  truong_ban: ['user.view','task.view_all','task.create','task.assign','task.edit','task.delete','task.approve','task.update_any','plan.view_all','plan.manage','kpi.view_all','kpi.config','report.export','system.audit'],
-  pho_ban:    ['user.view','task.view_all','task.create','task.assign','task.edit','task.approve','task.update_any','plan.view_all','plan.manage','kpi.view_all','report.export'],
-  to_truong:  ['user.view','task.view_dept','task.create','task.assign','task.edit','task.update_any','plan.view_all','plan.manage','kpi.view_all'],
-  chuyen_vien:['task.view_dept','plan.view_all'],
+  truong_ban: ['user.view','task.view_all','task.create','task.assign','task.edit','task.delete','task.approve','task.update_any','plan.view_all','plan.manage','monthly.view','monthly.manage','kpi.view_all','kpi.config','report.export','system.audit'],
+  pho_ban:    ['user.view','task.view_all','task.create','task.assign','task.edit','task.approve','task.update_any','plan.view_all','plan.manage','monthly.view','monthly.manage','kpi.view_all','report.export'],
+  to_truong:  ['user.view','task.view_dept','task.create','task.assign','task.edit','task.update_any','plan.view_all','plan.manage','monthly.view','monthly.manage','kpi.view_all'],
+  chuyen_vien:['task.view_dept','plan.view_all','monthly.view'],
 };
+
+/* ===== Phân quyền theo TAB (admin cấp cho từng tài khoản): none / view / edit ===== */
+const CONTENT_TABS=['dashboard','tasks','plans','monthly','gantt','kpi'];
+const TAB_META={
+  dashboard:{ label:'Tổng quan' },
+  tasks:{ label:'Công việc', view:['task.view_all','task.view_dept'], edit:['task.create','task.assign','task.edit','task.delete','task.approve','task.update_any'] },
+  plans:{ label:'Kế hoạch ngày', view:['plan.view_all'], edit:['plan.manage'] },
+  monthly:{ label:'Kế hoạch tháng', view:['monthly.view'], edit:['monthly.manage'] },
+  gantt:{ label:'Biểu đồ Gantt' },
+  kpi:{ label:'Đánh giá KPI', view:['kpi.view_all'], edit:['kpi.config'] },
+};
+const TAB_PERM_REV={}; // perm -> {tab, level}
+Object.entries(TAB_META).forEach(([tab,m])=>{ (m.view||[]).forEach(p=>TAB_PERM_REV[p]={tab,level:'view'}); (m.edit||[]).forEach(p=>TAB_PERM_REV[p]={tab,level:'edit'}); });
 
 const TASK_STATUS = {
   todo:  { label:'Chưa bắt đầu',   badge:'muted',  color:'#64748b' },
@@ -669,7 +703,7 @@ const Store = {
 
   seed(){
     const t = U.today();
-    const mkUser=(o)=>Object.assign({ id:U.uid('u'), status:'active', createdAt:Date.now(), permissions:null, avatar:null }, o);
+    const mkUser=(o)=>Object.assign({ id:U.uid('u'), status:'active', createdAt:Date.now(), permissions:null, tabAccess:null, avatar:null }, o);
     const users=[
       mkUser({ username:'admin', fullName:'Quản trị hệ thống', role:'admin', position:'Quản trị viên', department:'Văn phòng Ban', cccd:'001099012345', email:'admin@banqlda.gov.vn', phone:'0900000000', pw:U.hash('admin@123') }),
       mkUser({ fullName:'Nguyễn Văn An', role:'truong_ban', position:'Trưởng ban', department:'Lãnh đạo Ban', cccd:'001078001122', email:'an.nv@banqlda.gov.vn', phone:'0912345001', pw:U.hash('123456') }),
@@ -715,15 +749,20 @@ const State = { me:null, route:'dashboard', search:'' };
 /* ------------------------------- XÁC THỰC & PHÂN QUYỀN ------------------------------- */
 const SESSION_KEY='qlcv_session';
 const Auth = {
+  findUser(identifier){
+    const id=(identifier||'').trim(); if(!id) return null;
+    const n=U.norm(id), phone=id.replace(/\s+/g,'');
+    return Store.users().find(u=>
+      U.norm(u.username||'')===n || U.norm(u.email||'')===n ||
+      (u.cccd||'')===id || (u.phone||'').replace(/\s+/g,'')===phone
+    )||null;
+  },
   login(identifier, pw){
     const id=(identifier||'').trim();
     if(!id||!pw) return { ok:false, msg:'Vui lòng nhập đầy đủ tài khoản và mật khẩu.' };
-    const n=U.norm(id), phone=id.replace(/\s+/g,'');
-    const u=Store.users().find(u=>
-      U.norm(u.username||'')===n || U.norm(u.email||'')===n ||
-      (u.cccd||'')===id || (u.phone||'').replace(/\s+/g,'')===phone
-    );
+    const u=Auth.findUser(id);
     if(!u) return { ok:false, msg:'Không tìm thấy tài khoản với thông tin đã nhập.' };
+    if(u.status==='pending') return { ok:false, msg:'Tài khoản đang chờ quản trị viên duyệt.' };
     if(u.status==='disabled') return { ok:false, msg:'Tài khoản đã bị khóa. Liên hệ quản trị viên.' };
     if(u.status==='invited' && !u.pw) return { ok:false, msg:'Tài khoản chưa thiết lập mật khẩu. Liên hệ quản trị viên.' };
     if(u.pw!==U.hash(pw)) return { ok:false, msg:'Mật khẩu không đúng.' };
@@ -734,8 +773,16 @@ const Auth = {
   restore(){ const id=localStorage.getItem(SESSION_KEY); if(id){ const u=Store.user(id); if(u&&u.status!=='disabled'){ State.me=u; return true; } } return false; },
   logout(){ Store.audit('Đăng xuất', State.me?State.me.fullName:''); Store.save(); State.me=null; localStorage.removeItem(SESSION_KEY); location.hash=''; App.showLogin(); },
   effPerms(u){ if(!u) return []; if(u.role==='admin') return ALL_PERMS.slice(); return Array.isArray(u.permissions)? u.permissions : (ROLE_PERMS[u.role]||[]); },
-  can(perm, u){ u=u||State.me; if(!u) return false; if(u.role==='admin') return true; return Auth.effPerms(u).includes(perm); },
+  can(perm, u){ u=u||State.me; if(!u) return false; if(u.role==='admin') return true;
+    const m=TAB_PERM_REV[perm];
+    if(m){ const acc=Auth.tabExplicit(m.tab,u); if(acc==='none') return false; if(acc==='view'&&m.level==='edit') return false; }
+    return Auth.effPerms(u).includes(perm); },
   isAdmin:()=>State.me&&State.me.role==='admin',
+  // ----- Phân quyền theo tab -----
+  tabExplicit(tab,u){ u=u||State.me; return (u&&u.tabAccess&&typeof u.tabAccess==='object')?(u.tabAccess[tab]||null):null; },
+  tabVisible(tab,u){ u=u||State.me; if(!u) return false; if(u.role==='admin') return true; return Auth.tabExplicit(tab,u)!=='none'; },
+  tabRestricted(tab,u){ u=u||State.me; if(!u) return true; if(u.role==='admin') return false; const a=Auth.tabExplicit(tab,u); return a==='view'||a==='none'; },
+  deriveTab(tab,u){ u=u||State.me; if(!u) return 'none'; if(u.role==='admin') return 'edit'; const ex=Auth.tabExplicit(tab,u); if(ex) return ex; if(tab==='tasks') return 'edit'; const m=TAB_META[tab]||{}; return (m.edit||[]).some(p=>Auth.effPerms(u).includes(p))?'edit':'view'; },
 };
 
 /* ------------------------------- GIAO DIỆN (UI) ------------------------------- */
@@ -860,6 +907,7 @@ const NAV=[
     { route:'dashboard', label:'Tổng quan', icon:'dashboard' },
     { route:'tasks', label:'Công việc', icon:'tasks', count:'tasks' },
     { route:'plans', label:'Kế hoạch ngày', icon:'calendar' },
+    { route:'monthly', label:'Kế hoạch tháng', icon:'calendar' },
     { route:'gantt', label:'Biểu đồ Gantt', icon:'gantt' },
     { route:'kpi', label:'Đánh giá KPI', icon:'kpi' },
   ]},
@@ -873,6 +921,7 @@ const ROUTES={
   dashboard:{ title:'Tổng quan', fn:()=>Dashboard.render() },
   tasks:{ title:'Quản lý công việc', fn:()=>Tasks.render() },
   plans:{ title:'Kế hoạch công việc ngày', fn:()=>Plans.render() },
+  monthly:{ title:'Kế hoạch tháng', fn:()=>Monthly.render() },
   gantt:{ title:'Biểu đồ Gantt tiến độ', fn:()=>Gantt.render() },
   kpi:{ title:'Đánh giá KPI chuyên viên', fn:()=>KPI.render() },
   users:{ title:'Quản lý tài khoản', fn:()=>Users.render(), perm:'user.view' },
@@ -914,7 +963,7 @@ const App = {
     // nav
     let html='';
     NAV.forEach(sec=>{
-      const items=sec.items.filter(it=>!it.perm||Auth.can(it.perm));
+      const items=sec.items.filter(it=>(!it.perm||Auth.can(it.perm)) && (!CONTENT_TABS.includes(it.route)||Auth.tabVisible(it.route)));
       if(!items.length) return;
       if(sec.group) html+='<div class="nav-group">'+sec.group+'</div>';
       items.forEach(it=>{ html+='<a href="#/'+it.route+'" data-route="'+it.route+'">'+icon(it.icon)+'<span>'+it.label+'</span><span class="count hidden" data-count="'+it.route+'"></span></a>'; });
@@ -935,10 +984,12 @@ const App = {
     Notif.refresh();
   },
   router(){
+    if(!State.me) return;
     let r=(location.hash||'#/dashboard').replace('#/','')||'dashboard';
     if(!ROUTES[r]) r='dashboard';
     const def=ROUTES[r];
     if(def.perm && !Auth.can(def.perm)){ UI.toast('Không có quyền','Bạn không được cấp quyền truy cập mục này.','warn'); location.hash='#/dashboard'; return; }
+    if(CONTENT_TABS.includes(r) && !Auth.tabVisible(r)){ UI.toast('Không có quyền','Bạn không được cấp quyền xem mục này.','warn'); const fb=CONTENT_TABS.find(t=>Auth.tabVisible(t))||'profile'; if(fb!==r) location.hash='#/'+fb; return; }
     State.route=r;
     document.getElementById('ptitle').textContent=def.title;
     document.getElementById('crumb').textContent=Store.settings().orgShort||'Ban QLDA';
@@ -1037,9 +1088,9 @@ const Tasks = {
     if(Auth.can('task.view_dept')){ const d=me.department; return Store.tasks().filter(t=>{ const a=Store.user(t.assignee), g=Store.user(t.assigner); return t.assignee===me.id||t.assigner===me.id||(a&&a.department===d)||(g&&g.department===d); }); }
     return Store.tasks().filter(t=>t.assignee===me.id||t.assigner===me.id);
   },
-  canEdit(t){ return Auth.can('task.edit')||t.assigner===State.me.id; },
-  canUpdate(t){ return t.assignee===State.me.id||Auth.can('task.update_any'); },
-  canDelete(){ return Auth.can('task.delete'); },
+  canEdit(t){ return !Auth.tabRestricted('tasks') && (Auth.can('task.edit')||t.assigner===State.me.id); },
+  canUpdate(t){ return !Auth.tabRestricted('tasks') && (t.assignee===State.me.id||Auth.can('task.update_any')); },
+  canDelete(){ return !Auth.tabRestricted('tasks') && Auth.can('task.delete'); },
   render(){
     const broad=Auth.can('task.view_all')||Auth.can('task.view_dept');
     if(State.search){ this._filter.q=State.search; State.search=''; }
@@ -1177,7 +1228,7 @@ const Tasks = {
         </div></div></div>`:''}
       <div style="margin-top:20px"><h4 style="font-size:14px;font-weight:700;margin-bottom:14px">Trao đổi / Nhật ký (${comments.length})</h4>
         <div id="d-comments">${comments.length?comments.map(c=>{ const cu=Store.user(c.by); return '<div class="comment">'+Comp.avatar(cu||{fullName:c.byName,id:c.by},'sm')+'<div class="bd"><div class="h"><b>'+U.esc(c.byName)+'</b><span>'+U.relTime(c.ts)+'</span></div><p>'+U.esc(c.text)+'</p></div></div>'; }).join(''):'<p class="text-muted text-sm" style="margin-bottom:14px">Chưa có trao đổi nào.</p>'}</div>
-        <div class="flex gap-2 mt-2"><input class="input" id="d-comment" placeholder="Nhập nội dung trao đổi..." onkeydown="if(event.key==='Enter')Tasks.addComment('${t.id}')"><button class="btn btn-primary" onclick="Tasks.addComment('${t.id}')">${icon('send')}</button></div>
+        ${Auth.tabRestricted('tasks')?'<p class="text-muted text-sm">Chế độ chỉ xem — bạn không thể thêm trao đổi.</p>':`<div class="flex gap-2 mt-2"><input class="input" id="d-comment" placeholder="Nhập nội dung trao đổi..." onkeydown="if(event.key==='Enter')Tasks.addComment('${t.id}')"><button class="btn btn-primary" onclick="Tasks.addComment('${t.id}')">${icon('send')}</button></div>`}
       </div>`;
     let foot='';
     if(canEd) foot+='<button class="btn btn-ghost" onclick="Tasks.openForm(\''+t.id+'\')">'+icon('edit')+'Sửa</button>';
@@ -1186,7 +1237,7 @@ const Tasks = {
     UI.drawer({ head, body, foot });
   },
   quickUpdate(id){ const t=Store.task(id); const prog=parseInt(document.getElementById('d-prog').value,10); let st=document.getElementById('d-status').value; if(prog===100&&st!=='done'&&st!=='review') st='done'; t.progress=prog; t.status=st; t.updatedAt=Date.now(); if(st==='done'){ t.progress=100; if(!t.completedAt) t.completedAt=U.iso(U.today()); } else t.completedAt=null; Store.audit('Cập nhật tiến độ', t.title+' ('+t.progress+'%)'); Store.save(); UI.toast('Đã cập nhật','Tiến độ: '+t.progress+'% · '+Comp.statusOf(t).label,'ok'); this.openDetail(id); if(State.route==='tasks')this.renderTable(); else App.router(); App.updateCounts(); },
-  addComment(id){ const inp=document.getElementById('d-comment'); const tx=inp.value.trim(); if(!tx) return; const t=Store.task(id); t.comments=t.comments||[]; t.comments.push({ id:U.uid('c'), by:State.me.id, byName:State.me.fullName, text:tx, ts:Date.now() }); t.updatedAt=Date.now(); Store.save(); this.openDetail(id); },
+  addComment(id){ if(Auth.tabRestricted('tasks')) return; const inp=document.getElementById('d-comment'); if(!inp) return; const tx=inp.value.trim(); if(!tx) return; const t=Store.task(id); t.comments=t.comments||[]; t.comments.push({ id:U.uid('c'), by:State.me.id, byName:State.me.fullName, text:tx, ts:Date.now() }); t.updatedAt=Date.now(); Store.save(); this.openDetail(id); },
   approve(id){ const t=Store.task(id); t.status='done'; t.progress=100; if(!t.completedAt)t.completedAt=U.iso(U.today()); t.updatedAt=Date.now(); Store.audit('Duyệt hoàn thành', t.title); Store.save(); UI.closeDropdowns(); UI.toast('Đã duyệt','Công việc đã được nghiệm thu hoàn thành.','ok'); if(document.querySelector('.drawer.show'))this.openDetail(id); if(State.route==='tasks')this.renderTable(); else App.router(); App.updateCounts(); },
   async remove(id){ const t=Store.task(id); UI.closeDropdowns(); if(!await UI.confirm({ title:'Xóa công việc', message:'Bạn chắc chắn muốn xóa "'+t.title+'"? Hành động này không thể hoàn tác.', ok:'Xóa', danger:true })) return; const i=Store.tasks().findIndex(x=>x.id===id); Store.tasks().splice(i,1); Store.audit('Xóa công việc', t.title); Store.save(); UI.toast('Đã xóa','Đã xóa công việc.','ok'); if(State.route==='tasks')this.renderTable(); else App.router(); App.updateCounts(); },
   exportCSV(){ const rows=[['Cong viec','Du an','Nguoi thuc hien','Nguoi giao','Uu tien','Bat dau','Han','Tien do','Trang thai']]; this.filtered().forEach(t=>{ const u=Store.user(t.assignee),g=Store.user(t.assigner),p=Store.projects().find(x=>x.id===t.projectId); rows.push([t.title,p?p.name:'',u?u.fullName:'',g?g.fullName:'',PRIORITY[t.priority].label,t.start||'',t.due||'',t.progress+'%',Comp.statusOf(t).label]); }); const csv='﻿'+rows.map(r=>r.map(c=>'"'+String(c).replace(/"/g,'""')+'"').join(',')).join('\n'); const b=new Blob([csv],{type:'text/csv;charset=utf-8'}); const a=document.createElement('a'); a.href=URL.createObjectURL(b); a.download='cong-viec-'+U.iso(U.today())+'.csv'; a.click(); UI.toast('Đã xuất CSV','Tải xuống danh sách công việc.','ok'); },
@@ -1232,6 +1283,67 @@ const Plans = {
   },
   setDate(v){ if(v){ this._date=v; this.render(); } },
   shift(n){ this._date=U.iso(U.addDays(U.parse(this._date),n)); this.render(); },
+};
+/* ------------------------------- TRANG: KẾ HOẠCH THÁNG ------------------------------- */
+const Monthly = {
+  _month:null,
+  mkey(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'); },
+  cur(){ if(!this._month) this._month=this.mkey(U.today()); return this._month; },
+  shift(n){ const [y,m]=this.cur().split('-').map(Number); this._month=this.mkey(new Date(y,m-1+n,1)); this.render(); },
+  setMonth(v){ if(v&&/^\d{4}-\d{2}$/.test(v)){ this._month=v; this.render(); } },
+  monthTasks(){ const mk=this.cur(); return Tasks.visible().filter(t=>{ const d=t.due||t.start; return d&&d.slice(0,7)===mk; }); },
+  openDay(iso){ Plans._date=iso; if(Auth.tabVisible('plans')) App.go('plans'); else Monthly.dayList(iso); },
+  dayList(iso){ const ts=this.monthTasks().filter(t=>(t.due||t.start)===iso).sort((a,b)=>PRIORITY[b.priority].w-PRIORITY[a.priority].w);
+    UI.modal({ size:'md', title:'Công việc ngày '+U.fmt(iso), body: ts.length? ts.map(t=>{ const u=Store.user(t.assignee); return '<div class="notif-item" data-tid="'+t.id+'" style="cursor:pointer"><div class="ic" style="background:'+PRIORITY[t.priority].color+'1a;color:'+PRIORITY[t.priority].color+'">'+icon('flag')+'</div><div style="flex:1;min-width:0"><div class="tt">'+U.esc(t.title)+'</div><div class="tx" style="margin-top:3px">'+Comp.statusBadge(t)+' · '+U.esc(u?u.fullName:'—')+'</div></div></div>'; }).join('') : '<p class="text-muted" style="text-align:center;padding:16px">Không có công việc trong ngày này.</p>', foot:'<button class="btn btn-ghost" data-close>Đóng</button>',
+      onMount:(ov,close)=>{ ov.querySelectorAll('[data-tid]').forEach(el=>el.onclick=()=>{ close(); Tasks.openDetail(el.dataset.tid); }); } });
+  },
+  render(){
+    const mk=this.cur(), parts=mk.split('-').map(Number), y=parts[0], m=parts[1];
+    const first=new Date(y,m-1,1), ndays=new Date(y,m,0).getDate(), startW=(first.getDay()+6)%7, todayIso=U.iso(U.today());
+    const list=this.monthTasks();
+    const done=list.filter(t=>t.status==='done').length;
+    const overdue=list.filter(t=>Comp.statusOf(t).key==='overdue').length;
+    const doneOnTime=list.filter(t=>t.status==='done'&&t.completedAt&&t.due&&t.completedAt<=t.due).length;
+    const onRate=U.pct(doneOnTime, done);
+    const byDay={}; list.forEach(t=>{ const dd=t.due||t.start; const day=+dd.slice(8,10); (byDay[day]=byDay[day]||[]).push(t); });
+    const wdays=['T2','T3','T4','T5','T6','T7','CN'];
+    let cells='';
+    for(let i=0;i<startW;i++) cells+='<div class="mc empty"></div>';
+    for(let day=1;day<=ndays;day++){
+      const iso=mk+'-'+String(day).padStart(2,'0');
+      const ts=(byDay[day]||[]).sort((a,b)=>PRIORITY[b.priority].w-PRIORITY[a.priority].w);
+      const chips=ts.slice(0,3).map(t=>'<div class="mchip" style="border-left:3px solid '+PRIORITY[t.priority].color+'" onclick="event.stopPropagation();Tasks.openDetail(\''+t.id+'\')" title="'+U.esc(t.title)+'">'+U.esc(t.title)+'</div>').join('');
+      const more=ts.length>3?'<div class="mmore">+'+(ts.length-3)+' việc khác</div>':'';
+      cells+='<div class="mc'+(iso===todayIso?' today':'')+'" onclick="Monthly.openDay(\''+iso+'\')"><div class="md"><span>'+day+'</span>'+(ts.length?'<span class="mcnt">'+ts.length+'</span>':'')+'</div>'+chips+more+'</div>';
+    }
+    const byUser={}; list.forEach(t=>{ (byUser[t.assignee]=byUser[t.assignee]||[]).push(t); });
+    const uids=Object.keys(byUser).sort((a,b)=>byUser[b].length-byUser[a].length);
+    const monthName=new Date(y,m-1,1).toLocaleDateString('vi-VN',{month:'long',year:'numeric'});
+    const canAdd=Auth.can('monthly.manage')&&Auth.can('task.create');
+    document.getElementById('view').innerHTML=`
+      <div class="page-head"><div><h1>Kế hoạch tháng</h1><p>Toàn bộ công việc theo lịch tháng, phân bổ khối lượng theo từng chuyên viên. Bấm vào một ngày để xem chi tiết.</p></div>
+        <div class="page-actions">${canAdd?'<button class="btn btn-primary" onclick="Tasks.openForm()">'+icon('plus')+'Thêm công việc</button>':''}</div></div>
+      <div class="card mb-4"><div class="card-body" style="padding:14px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+        <button class="btn btn-ghost btn-sm" onclick="Monthly.shift(-1)">← Tháng trước</button>
+        <input class="input" type="month" value="${mk}" onchange="Monthly.setMonth(this.value)" style="width:auto">
+        <button class="btn btn-ghost btn-sm" onclick="Monthly.shift(1)">Tháng sau →</button>
+        <button class="btn btn-ghost btn-sm" onclick="Monthly.setMonth('${this.mkey(U.today())}')">Về tháng này</button>
+        <div style="margin-left:auto;font-weight:700;font-size:15px;text-transform:capitalize">${monthName}</div>
+      </div></div>
+      <div class="stat-grid">
+        ${statCard('brand','tasks',list.length,'Công việc trong tháng')}
+        ${statCard('ok','checkCircle',done,'Đã hoàn thành')}
+        ${statCard('danger','alert',overdue,'Đang quá hạn')}
+        ${statCard('info','clock',onRate+'%','Tỷ lệ đúng hạn')}
+      </div>
+      <div class="card mb-4"><div class="card-body" style="padding:14px">
+        <div class="mgrid mhead">${wdays.map(w=>'<div class="mwd">'+w+'</div>').join('')}</div>
+        <div class="mgrid">${cells}</div>
+      </div></div>
+      <div class="card"><div class="card-head"><h3>Khối lượng theo chuyên viên — <span style="text-transform:capitalize">${monthName}</span></h3></div><div class="card-body" style="padding:16px">
+        ${uids.length?('<div class="table-wrap"><table class="tbl"><thead><tr><th>Chuyên viên</th><th>Tổng việc</th><th>Hoàn thành</th><th>Đang làm</th><th>Quá hạn</th></tr></thead><tbody>'+uids.map(uid=>{ const u=Store.user(uid); const g=byUser[uid]; const dn=g.filter(t=>t.status==='done').length; const od=g.filter(t=>Comp.statusOf(t).key==='overdue').length; const doing=g.filter(t=>t.status!=='done').length; return '<tr><td>'+Comp.userCell(u||{fullName:'(đã xóa)',id:uid})+'</td><td><b>'+g.length+'</b></td><td>'+dn+'</td><td>'+doing+'</td><td>'+(od?'<span class="badge badge-danger">'+od+'</span>':'0')+'</td></tr>'; }).join('')+'</tbody></table></div>'):Comp.empty('calendar','Chưa có công việc trong tháng này','Chọn tháng khác hoặc thêm công việc mới.')}
+      </div></div>`;
+  },
 };
 /* ------------------------------- TRANG: BIỂU ĐỒ GANTT ------------------------------- */
 const Gantt = {
@@ -1396,16 +1508,81 @@ const KPI = {
   }
 };
 /* ------------------------------- TRANG: QUẢN LÝ TÀI KHOẢN ------------------------------- */
+/* ------------------------------- ĐĂNG KÝ & QUÊN MẬT KHẨU ------------------------------- */
+const Register = {
+  open(){
+    UI.modal({ size:'lg', title:'Tạo tài khoản mới', sub:'Đăng ký tài khoản — chờ quản trị viên duyệt trước khi sử dụng',
+      body:`
+        <div class="field"><label>Họ và tên <span class="req">*</span></label><input class="input" id="rg-name" placeholder="VD: Nguyễn Văn A"></div>
+        <div style="background:var(--brand-50);border:1px dashed var(--brand-200);border-radius:10px;padding:14px;margin-bottom:14px">
+          <div class="text-sm" style="font-weight:600;margin-bottom:10px;color:var(--brand-700)">Thông tin đăng nhập (nhập ít nhất một)</div>
+          <div class="field"><label>Số CCCD</label><input class="input" id="rg-cccd" inputmode="numeric" placeholder="12 chữ số trên căn cước"></div>
+          <div class="grid-2">
+            <div class="field"><label>Email</label><input class="input" id="rg-email" placeholder="email@banqlda.gov.vn"></div>
+            <div class="field"><label>Số điện thoại</label><input class="input" id="rg-phone" placeholder="09xxxxxxxx"></div>
+          </div>
+        </div>
+        <div class="grid-2">
+          <div class="field"><label>Chức vụ</label><input class="input" id="rg-position" placeholder="VD: Chuyên viên Kỹ thuật"></div>
+          <div class="field"><label>Đơn vị / Phòng ban</label><input class="input" id="rg-dept" placeholder="VD: Phòng Kỹ thuật"></div>
+        </div>
+        <div class="field"><label>Mật khẩu <span class="req">*</span></label><input class="input" id="rg-pw" type="password" placeholder="Tối thiểu 6 ký tự"></div>`,
+      foot:'<button class="btn btn-ghost" data-close>Hủy</button><button class="btn btn-primary" data-save>'+icon('check')+'Gửi đăng ký</button>',
+      onMount:(ov,close)=>{ ov.querySelector('[data-save]').onclick=()=>Register.submit(ov,close); }
+    });
+  },
+  submit(ov,close){
+    const v=s=>{const e=ov.querySelector(s);return e?e.value.trim():'';};
+    const name=v('#rg-name'), cccd=v('#rg-cccd'), email=v('#rg-email').toLowerCase(), phone=v('#rg-phone'), pw=ov.querySelector('#rg-pw').value||'';
+    if(!name){ UI.toast('Thiếu thông tin','Nhập họ và tên.','err'); return; }
+    if(!cccd&&!email&&!phone){ UI.toast('Thiếu thông tin','Cần ít nhất một: CCCD, email hoặc số điện thoại.','err'); return; }
+    if(email&&!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){ UI.toast('Email không hợp lệ','Kiểm tra lại email.','err'); return; }
+    if(pw.length<6){ UI.toast('Mật khẩu yếu','Mật khẩu tối thiểu 6 ký tự.','err'); return; }
+    const dup=Store.users().some(u=>(cccd&&u.cccd===cccd)||(email&&(u.email||'').toLowerCase()===email)||(phone&&u.phone===phone));
+    if(dup){ UI.toast('Đã tồn tại','Thông tin đăng nhập đã được dùng. Hãy thử "Quên mật khẩu".','err'); return; }
+    const u={ id:U.uid('u'), status:'pending', createdAt:Date.now(), permissions:null, tabAccess:null, role:'chuyen_vien', fullName:name, cccd, email, phone, position:v('#rg-position'), department:v('#rg-dept'), pw:U.hash(pw) };
+    Store.users().push(u); Store.audit('Đăng ký tài khoản (chờ duyệt)', name); Store.save(); close();
+    UI.modal({ size:'sm', title:'Đã gửi đăng ký', body:'<div style="text-align:center"><div class="ic ic-ok" style="width:56px;height:56px;border-radius:50%;margin:0 auto 14px;display:flex;align-items:center;justify-content:center">'+icon('checkCircle')+'</div><p>Tài khoản <b>'+U.esc(name)+'</b> đã được gửi. Vui lòng chờ <b>quản trị viên duyệt</b> trước khi đăng nhập.</p></div>', foot:'<button class="btn btn-primary" data-close>Đã hiểu</button>' });
+  }
+};
+const Forgot = {
+  open(){
+    UI.modal({ size:'md', title:'Quên mật khẩu', sub:'Gửi yêu cầu cấp lại mật khẩu tới quản trị viên',
+      body:`<div class="field"><label>Tài khoản của bạn <span class="req">*</span></label><input class="input" id="fg-id" placeholder="Nhập CCCD, email hoặc số điện thoại"></div>
+        <div class="field"><label>Ghi chú (tùy chọn)</label><input class="input" id="fg-note" placeholder="VD: số điện thoại liên hệ, lý do..."></div>
+        <div class="hint">Quản trị viên sẽ cấp lại mật khẩu và thông báo cho bạn. Hệ thống nội bộ không gửi email tự động.</div>`,
+      foot:'<button class="btn btn-ghost" data-close>Hủy</button><button class="btn btn-primary" data-save>Gửi yêu cầu</button>',
+      onMount:(ov,close)=>{ ov.querySelector('[data-save]').onclick=()=>Forgot.submit(ov,close); }
+    });
+  },
+  submit(ov,close){
+    const id=ov.querySelector('#fg-id').value.trim(), note=ov.querySelector('#fg-note').value.trim();
+    if(!id){ UI.toast('Thiếu thông tin','Nhập tài khoản của bạn.','err'); return; }
+    const u=Auth.findUser(id);
+    Store.data.resetRequests=(Store.data.resetRequests||[]).filter(r=>r.identifier!==id);
+    Store.data.resetRequests.unshift({ id:U.uid('rq'), identifier:id, name:u?u.fullName:'', note, ts:Date.now() });
+    Store.audit('Yêu cầu cấp lại mật khẩu', id); Store.save(); close();
+    UI.toast('Đã gửi yêu cầu', u?('Quản trị viên sẽ cấp lại mật khẩu cho '+u.fullName+'.'):'Yêu cầu đã gửi tới quản trị viên.','ok');
+  }
+};
+/* ------------------------------- TRANG: QUẢN LÝ TÀI KHOẢN ------------------------------- */
 const Users = {
   _q:'', _role:'',
   render(){
-    const canCreate=Auth.can('user.create'), canEdit=Auth.can('user.edit'), canPerm=Auth.can('user.permission'), canDel=Auth.can('user.delete');
+    const adm=Auth.isAdmin();
+    const canCreate=adm;
     const nq=U.norm(this._q);
+    const reqs=(Store.data.resetRequests||[]);
+    const pending=Store.users().filter(u=>u.status==='pending').length;
     let list=Store.users().filter(u=> (!this._role||u.role===this._role) && (!nq || U.norm(u.fullName).includes(nq)||U.norm(u.email||'').includes(nq)||(u.cccd||'').includes(this._q)||(u.phone||'').includes(this._q)||U.norm(u.department||'').includes(nq)) );
     const roleCounts={}; Store.users().forEach(u=>roleCounts[u.role]=(roleCounts[u.role]||0)+1);
     document.getElementById('view').innerHTML=`
       <div class="page-head"><div><h1>Quản lý tài khoản</h1><p>Tạo, mời và quản lý tài khoản chuyên viên. Đăng nhập bằng số CCCD, email hoặc số điện thoại.</p></div>
         <div class="page-actions">${canCreate?'<button class="btn btn-primary" onclick="Users.openForm()">'+icon('plus')+'Tạo / mời tài khoản</button>':''}</div></div>
+      ${adm&&(reqs.length||pending)?'<div class="card mb-4" style="border-color:var(--warn)"><div class="card-body" style="padding:14px 16px">'+
+        (pending?'<div class="flex items-center gap-2"'+(reqs.length?' style="margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid var(--border)"':'')+'><span class="badge badge-review">'+pending+'</span><span><b>'+pending+'</b> tài khoản mới đăng ký đang <b>chờ duyệt</b> — mở menu ⋯ ở cuối mỗi dòng để <b>Duyệt tài khoản</b>.</span></div>':'')+
+        (reqs.length?'<div style="font-weight:700;margin-bottom:4px">'+icon('key')+' Yêu cầu cấp lại mật khẩu ('+reqs.length+')</div>'+reqs.map(function(r){return '<div class="flex items-center gap-2" style="padding:8px 0;border-top:1px solid var(--border)"><div style="flex:1;min-width:0"><b>'+U.esc(r.name||r.identifier)+'</b> <span class="text-muted text-sm">· '+U.esc(r.identifier)+(r.note?' · '+U.esc(r.note):'')+'</span><div class="text-xs text-muted">'+U.relTime(r.ts)+'</div></div><button class="btn btn-primary btn-sm" onclick="Users.handleReset(\''+r.id+'\')">Cấp lại</button><button class="btn btn-ghost btn-sm" onclick="Users.dismissReset(\''+r.id+'\')">Bỏ</button></div>';}).join(''):'')+
+      '</div></div>':''}
       <div class="stat-grid">
         ${statCard('brand','users',Store.users().length,'Tổng tài khoản')}
         ${statCard('ok','checkCircle',Store.users().filter(u=>u.status==='active').length,'Đang hoạt động')}
@@ -1434,18 +1611,30 @@ const Users = {
       '<td class="text-sm"><div style="font-weight:600">'+U.esc(u.position||'—')+'</div><div class="text-muted">'+U.esc(u.department||'')+'</div></td>'+
       '<td class="text-sm" style="font-variant-numeric:tabular-nums">'+U.esc(u.cccd||'—')+'</td>'+
       '<td class="text-sm">'+(u.email?'<div>'+U.esc(u.email)+'</div>':'')+(u.phone?'<div class="text-muted">'+U.esc(u.phone)+'</div>':'')+(!u.email&&!u.phone?'—':'')+'</td>'+
-      '<td>'+(u.status==='active'?'<span class="badge badge-ok"><span class="dot"></span>Hoạt động</span>':u.status==='invited'?'<span class="badge badge-warn"><span class="dot"></span>Đã mời</span>':'<span class="badge badge-danger"><span class="dot"></span>Đã khóa</span>')+'</td>'+
+      '<td>'+(u.status==='active'?'<span class="badge badge-ok"><span class="dot"></span>Hoạt động</span>':u.status==='pending'?'<span class="badge badge-review"><span class="dot"></span>Chờ duyệt</span>':u.status==='invited'?'<span class="badge badge-warn"><span class="dot"></span>Đã mời</span>':'<span class="badge badge-danger"><span class="dot"></span>Đã khóa</span>')+'</td>'+
       '<td style="text-align:right">'+Users.rowMenu(u)+'</td></tr>').join('');
   },
   rowMenu(u){
     const me=State.me, isSelf=u.id===me.id, items=[];
-    if(Auth.can('user.edit')) items.push('<button onclick="Users.openForm(\''+u.id+'\')">'+icon('edit')+' Chỉnh sửa</button>');
-    if(Auth.can('user.permission')&&u.role!=='admin') items.push('<button onclick="Perms.openFor(\''+u.id+'\')">'+icon('shield')+' Phân quyền</button>');
-    if(Auth.can('user.edit')) items.push('<button onclick="Users.resetPw(\''+u.id+'\')">'+icon('key')+' Đặt lại mật khẩu</button>');
-    if(Auth.can('user.delete')&&!isSelf){ items.push('<div class="sep"></div>'); items.push(u.status==='disabled'?'<button onclick="Users.toggle(\''+u.id+'\')">'+icon('refresh')+' Mở khóa</button>':'<button onclick="Users.toggle(\''+u.id+'\')">'+icon('lock')+' Khóa tài khoản</button>'); items.push('<button class="danger" onclick="Users.remove(\''+u.id+'\')">'+icon('trash')+' Xóa tài khoản</button>'); }
-    if(!items.length) return '';
+    if(!Auth.isAdmin()) return ''; // Chỉ quản trị viên được sửa/xóa/cập nhật tài khoản
+    if(u.status==='pending') items.push('<button onclick="Users.approve(\''+u.id+'\')">'+icon('checkCircle')+' Duyệt tài khoản</button>');
+    items.push('<button onclick="Users.openForm(\''+u.id+'\')">'+icon('edit')+' Chỉnh sửa</button>');
+    if(u.role!=='admin') items.push('<button onclick="Perms.openFor(\''+u.id+'\')">'+icon('shield')+' Phân quyền tab</button>');
+    items.push('<button onclick="Users.resetPw(\''+u.id+'\')">'+icon('key')+' Đặt lại mật khẩu</button>');
+    if(!isSelf){ items.push('<div class="sep"></div>'); items.push(u.status==='disabled'?'<button onclick="Users.toggle(\''+u.id+'\')">'+icon('refresh')+' Mở khóa</button>':'<button onclick="Users.toggle(\''+u.id+'\')">'+icon('lock')+' Khóa tài khoản</button>'); items.push('<button class="danger" onclick="Users.remove(\''+u.id+'\')">'+icon('trash')+' Xóa tài khoản</button>'); }
     return '<div class="dd"><button class="btn-icon" onclick="this.nextElementSibling.classList.toggle(\'show\');event.stopPropagation()">'+icon('more')+'</button><div class="dd-menu">'+items.join('')+'</div></div>';
   },
+  approve(id){ const u=Store.user(id); if(!u) return; u.status='active'; Store.audit('Duyệt tài khoản',u.fullName); Store.save(); UI.toast('Đã duyệt',u.fullName+' có thể đăng nhập.','ok'); this.render(); App.renderChrome(); },
+  handleReset(reqId){ const reqs=Store.data.resetRequests||[]; const r=reqs.find(x=>x.id===reqId); if(!r) return;
+    const u=Auth.findUser(r.identifier);
+    if(!u){ UI.toast('Không tìm thấy','Không khớp tài khoản nào với thông tin yêu cầu. Hãy bỏ yêu cầu này.','warn'); return; }
+    UI.modal({ size:'sm', title:'Cấp lại mật khẩu', sub:u.fullName,
+      body:'<div class="field"><label>Mật khẩu mới</label><input class="input" id="hr-pw" value="123456"></div><div class="hint">Thông báo mật khẩu mới cho người dùng và yêu cầu đổi sau khi đăng nhập.</div>',
+      foot:'<button class="btn btn-ghost" data-close>Hủy</button><button class="btn btn-primary" data-save>Cấp lại</button>',
+      onMount:(ov,close)=>{ ov.querySelector('[data-save]').onclick=()=>{ const pw=ov.querySelector('#hr-pw').value||'123456'; u.pw=U.hash(pw); if(u.status==='invited'||u.status==='pending')u.status='active'; Store.data.resetRequests=(Store.data.resetRequests||[]).filter(x=>x.id!==reqId); Store.audit('Cấp lại mật khẩu (theo yêu cầu)',u.fullName); Store.save(); close(); UI.toast('Đã cấp lại','Mật khẩu mới của '+u.fullName+': '+pw,'ok'); Users.render(); }; }
+    });
+  },
+  dismissReset(reqId){ Store.data.resetRequests=(Store.data.resetRequests||[]).filter(x=>x.id!==reqId); Store.save(); this.render(); },
   depList(){ return [...new Set(Store.users().map(u=>u.department).filter(Boolean))]; },
   openForm(id){
     const u=id?Store.user(id):null, editing=!!u;
@@ -1490,7 +1679,7 @@ const Users = {
     else {
       const uname=val('#uf-username'); const pw=g('#uf-pw').value||'123456';
       if(uname&&others.some(u=>U.norm(u.username||'')===U.norm(uname))){ g('#uf-username').closest('.field').classList.add('invalid'); UI.toast('Trùng tên đăng nhập','Tên đăng nhập đã tồn tại.','err'); return; }
-      const u=Object.assign({ id:U.uid('u'), status:'active', createdAt:Date.now(), permissions:null, role:g('#uf-role').value, username:uname||null, pw:U.hash(pw) }, payload);
+      const u=Object.assign({ id:U.uid('u'), status:'active', createdAt:Date.now(), permissions:null, tabAccess:null, role:g('#uf-role').value, username:uname||null, pw:U.hash(pw) }, payload);
       Store.users().push(u); Store.audit('Tạo tài khoản mới',u.fullName+' ('+ROLES[u.role].name+')');
       close();
       UI.modal({ size:'sm', title:'Đã tạo tài khoản', body:'<div style="text-align:center"><div class="ic ic-ok" style="width:56px;height:56px;border-radius:50%;margin:0 auto 14px;display:flex;align-items:center;justify-content:center">'+icon('checkCircle')+'</div><p style="margin-bottom:14px">Tài khoản <b>'+U.esc(name)+'</b> đã được tạo. Gửi thông tin đăng nhập sau cho chuyên viên:</p><div style="background:var(--surface-2);border:1px solid var(--border);border-radius:10px;padding:14px;text-align:left;font-size:13.5px">'+(cccd?'<div>CCCD: <b>'+U.esc(cccd)+'</b></div>':'')+(email?'<div>Email: <b>'+U.esc(email)+'</b></div>':'')+(phone?'<div>SĐT: <b>'+U.esc(phone)+'</b></div>':'')+(uname?'<div>Tên đăng nhập: <b>'+U.esc(uname)+'</b></div>':'')+'<div style="margin-top:6px">Mật khẩu: <b>'+U.esc(pw)+'</b></div></div></div>', foot:'<button class="btn btn-primary" data-close>Đã hiểu</button>' });
@@ -1520,15 +1709,15 @@ const Perms = {
   render(){
     const users=Store.users().filter(u=>u.role!=='admin');
     document.getElementById('view').innerHTML=`
-      <div class="page-head"><div><h1>Phân quyền tài khoản</h1><p>Mỗi tài khoản nhận quyền theo vai trò mặc định, hoặc được quản trị viên tùy chỉnh chi tiết từng chức năng.</p></div></div>
+      <div class="page-head"><div><h1>Phân quyền tài khoản</h1><p>Quản trị viên cấp quyền truy cập cho từng tài khoản theo từng tab: ẩn, chỉ xem, hoặc xem &amp; sửa. Mặc định mỗi tài khoản dùng quyền theo vai trò.</p></div></div>
       <div class="card mb-4"><div class="card-head"><h3>Vai trò & quyền mặc định</h3></div><div class="card-body">
         <div class="row" style="grid-template-columns:repeat(auto-fit,minmax(220px,1fr))">
         ${Object.entries(ROLES).map(([k,v])=>{ const n=k==='admin'?ALL_PERMS.length:(ROLE_PERMS[k]||[]).length; return '<div style="border:1px solid var(--border);border-radius:12px;padding:16px"><div class="flex items-center gap-2 mb-2"><span style="width:10px;height:10px;border-radius:50%;background:'+v.color+'"></span><b>'+v.name+'</b></div><p class="text-sm text-muted" style="margin-bottom:10px;min-height:34px">'+v.desc+'</p><div class="flex items-center justify-between"><span class="badge badge-brand">'+n+'/'+ALL_PERMS.length+' quyền</span>'+(k==='admin'?'<span class="badge badge-danger">Toàn quyền</span>':'<button class="btn btn-ghost btn-sm" onclick="Perms.viewRole(\''+k+'\')">Xem</button>')+'</div></div>'; }).join('')}
         </div>
       </div></div>
       <div class="card"><div class="card-head"><h3>Phân quyền theo tài khoản</h3></div><div class="card-body" style="padding:16px">
-        <div class="table-wrap"><table class="tbl"><thead><tr><th>Tài khoản</th><th>Vai trò</th><th>Nguồn quyền</th><th>Số quyền</th><th></th></tr></thead><tbody>
-        ${users.map(u=>{ const custom=Array.isArray(u.permissions); const n=Auth.effPerms(u).length; return '<tr><td>'+Comp.userCell(u)+'</td><td>'+Comp.roleBadge(u.role)+'</td><td>'+(custom?'<span class="badge badge-review">Tùy chỉnh</span>':'<span class="badge badge-muted">Theo vai trò</span>')+'</td><td><span class="badge badge-brand">'+n+'/'+ALL_PERMS.length+'</span></td><td style="text-align:right"><button class="btn btn-ghost btn-sm" onclick="Perms.openFor(\''+u.id+'\')">'+icon('shield')+'Phân quyền</button></td></tr>'; }).join('')}
+        <div class="table-wrap"><table class="tbl"><thead><tr><th>Tài khoản</th><th>Vai trò</th><th>Nguồn quyền</th><th>Truy cập theo tab</th><th></th></tr></thead><tbody>
+        ${users.map(u=>{ const custom=u.tabAccess&&typeof u.tabAccess==='object'; let summary; if(custom){ const vals=CONTENT_TABS.map(t=>u.tabAccess[t]||Auth.deriveTab(t,u)); const ed=vals.filter(v=>v==='edit').length, vw=vals.filter(v=>v==='view').length, hid=vals.filter(v=>v==='none').length; summary='<span class="badge badge-ok">'+ed+' sửa</span> <span class="badge badge-info">'+vw+' xem</span>'+(hid?' <span class="badge badge-muted">'+hid+' ẩn</span>':''); } else summary='<span class="text-muted text-sm">Toàn bộ tab theo vai trò</span>'; return '<tr><td>'+Comp.userCell(u)+'</td><td>'+Comp.roleBadge(u.role)+'</td><td>'+(custom?'<span class="badge badge-review">Tùy chỉnh theo tab</span>':'<span class="badge badge-muted">Mặc định</span>')+'</td><td>'+summary+'</td><td style="text-align:right"><button class="btn btn-ghost btn-sm" onclick="Perms.openFor(\''+u.id+'\')">'+icon('shield')+'Phân quyền tab</button></td></tr>'; }).join('')}
         ${!users.length?'<tr><td colspan="5" class="text-muted" style="text-align:center;padding:20px">Chưa có tài khoản nào.</td></tr>':''}
         </tbody></table></div>
       </div></div>`;
@@ -1542,38 +1731,21 @@ const Perms = {
     const u=Store.user(uid); if(!u) return;
     if(u.role==='admin'){ UI.toast('Quản trị viên','Quản trị viên luôn có toàn quyền.','info'); return; }
     UI.closeDropdowns();
-    const custom=Array.isArray(u.permissions);
-    const cur=new Set(Auth.effPerms(u));
-    const groupsHtml=PERM_GROUPS.map(g=>`<div class="perm-group"><div class="perm-group-head"><span class="gl">${icon(g.icon)}${g.label}</span><label class="switch" title="Chọn tất cả nhóm" onclick="event.stopPropagation()"><input type="checkbox" data-group="${g.key}"><span class="sl"></span></label></div>
-      <div class="perm-list">${g.perms.map(p=>`<div class="perm-item"><div class="pt"><b>${p.label}</b><span>${p.key}</span></div><label class="switch"><input type="checkbox" data-perm="${p.key}" ${cur.has(p.key)?'checked':''}><span class="sl"></span></label></div>`).join('')}</div></div>`).join('');
-    UI.modal({ title:'Phân quyền: '+u.fullName, sub:ROLES[u.role].name+' · '+(u.position||''), size:'lg',
-      body:`<div class="seg" style="margin-bottom:16px"><button data-mode="role" class="${custom?'':'active'}">Theo vai trò mặc định</button><button data-mode="custom" class="${custom?'active':''}">Tùy chỉnh chi tiết</button></div>
-        <div id="perm-note" class="hint" style="margin-bottom:14px"></div>
-        <div id="perm-groups">${groupsHtml}</div>`,
-      foot:'<button class="btn btn-ghost" data-close>Hủy</button><button class="btn btn-primary" data-save>'+icon('check')+'Lưu phân quyền</button>',
+    const opts=[['none','Không'],['view','Xem'],['edit','Xem & sửa']];
+    const rows=CONTENT_TABS.map(tab=>{
+      const cur=Auth.deriveTab(tab,u);
+      const seg=opts.map(o=>'<button type="button" class="'+(cur===o[0]?'active':'')+'" data-tab="'+tab+'" data-val="'+o[0]+'">'+o[1]+'</button>').join('');
+      return '<div class="tabperm-row"><div class="tabperm-name">'+TAB_META[tab].label+'</div><div class="seg">'+seg+'</div></div>';
+    }).join('');
+    UI.modal({ title:'Phân quyền theo tab: '+u.fullName, sub:ROLES[u.role].name+(u.position?' · '+u.position:''), size:'lg',
+      body:`<div class="hint" style="margin-bottom:14px">Chọn mức truy cập cho từng tab với tài khoản này: <b>Không</b> (ẩn tab) · <b>Xem</b> (chỉ đọc) · <b>Xem &amp; sửa</b> (được thao tác trong phạm vi vai trò). Quản trị viên luôn có toàn quyền.</div>
+        <div class="tabperm">${rows}</div>`,
+      foot:'<button class="btn btn-ghost" data-reset style="margin-right:auto">Theo vai trò mặc định</button><button class="btn btn-ghost" data-close>Hủy</button><button class="btn btn-primary" data-save>'+icon('check')+'Lưu phân quyền</button>',
       onMount:(ov,close)=>{
-        let mode=custom?'custom':'role';
-        const note=ov.querySelector('#perm-note');
-        const applyMode=()=>{
-          ov.querySelectorAll('[data-mode]').forEach(b=>b.classList.toggle('active',b.dataset.mode===mode));
-          const roleSet=new Set(ROLE_PERMS[u.role]||[]);
-          ov.querySelectorAll('[data-perm]').forEach(cb=>{ cb.disabled=(mode==='role'); if(mode==='role') cb.checked=roleSet.has(cb.dataset.perm); });
-          ov.querySelectorAll('[data-group]').forEach(cb=>cb.disabled=(mode==='role'));
-          note.innerHTML=mode==='role'?'Tài khoản dùng đúng bộ quyền mặc định của vai trò <b>'+ROLES[u.role].name+'</b>.':'Bật/tắt từng quyền cụ thể cho tài khoản này (ghi đè vai trò mặc định).';
-          syncGroups();
-        };
-        const syncGroups=()=>{ PERM_GROUPS.forEach(g=>{ const boxes=[...ov.querySelectorAll('[data-perm]')].filter(cb=>g.perms.some(p=>p.key===cb.dataset.perm)); const all=boxes.every(cb=>cb.checked); const gb=ov.querySelector('[data-group="'+g.key+'"]'); if(gb) gb.checked=all; }); };
-        ov.querySelectorAll('[data-mode]').forEach(b=>b.onclick=()=>{ mode=b.dataset.mode; applyMode(); });
-        ov.querySelectorAll('[data-group]').forEach(gb=>gb.onchange=()=>{ const g=PERM_GROUPS.find(x=>x.key===gb.dataset.group); g.perms.forEach(p=>{ const cb=ov.querySelector('[data-perm="'+p.key+'"]'); if(cb&&!cb.disabled) cb.checked=gb.checked; }); });
-        ov.querySelectorAll('[data-perm]').forEach(cb=>cb.onchange=syncGroups);
-        ov.querySelector('[data-save]').onclick=()=>{
-          if(mode==='role'){ u.permissions=null; } else { u.permissions=[...ov.querySelectorAll('[data-perm]:checked')].map(cb=>cb.dataset.perm); }
-          Store.audit('Phân quyền', u.fullName+' ('+(mode==='role'?'theo vai trò':u.permissions.length+' quyền tùy chỉnh')+')'); Store.save(); close();
-          UI.toast('Đã lưu','Cập nhật phân quyền cho '+u.fullName+'.','ok');
-          if(State.route==='permissions') Perms.render();
-          if(u.id===State.me.id){ App.renderChrome(); App.router(); }
-        };
-        applyMode();
+        const sel={}; CONTENT_TABS.forEach(tab=>sel[tab]=Auth.deriveTab(tab,u));
+        ov.querySelectorAll('.seg button[data-tab]').forEach(b=>b.onclick=()=>{ const tab=b.dataset.tab; sel[tab]=b.dataset.val; ov.querySelectorAll('.seg button[data-tab="'+tab+'"]').forEach(x=>x.classList.toggle('active',x===b)); });
+        ov.querySelector('[data-reset]').onclick=()=>{ u.tabAccess=null; Store.audit('Phân quyền tab', u.fullName+' (theo vai trò)'); Store.save(); close(); UI.toast('Đã đặt lại','Dùng quyền theo vai trò mặc định cho '+u.fullName+'.','ok'); if(State.route==='permissions')Perms.render(); if(u.id===State.me.id){ App.renderChrome(); App.router(); } };
+        ov.querySelector('[data-save]').onclick=()=>{ u.tabAccess=Object.assign({},sel); Store.audit('Phân quyền tab', u.fullName); Store.save(); close(); UI.toast('Đã lưu','Cập nhật quyền theo tab cho '+u.fullName+'.','ok'); if(State.route==='permissions')Perms.render(); if(u.id===State.me.id){ App.renderChrome(); App.router(); } };
       }
     });
   }
