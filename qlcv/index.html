@@ -496,9 +496,10 @@ table.tbl tbody tr:last-child td{border-bottom:none}
         <button class="btn-icon" onclick="UI.toggleTheme()" title="Giao diện sáng/tối">%ICON_MOON%</button>
         <div class="dd">
           <button class="btn-icon" id="notif-btn" onclick="UI.toggleNotif()" style="position:relative" title="Thông báo">%ICON_BELL%<span class="notif-badge hidden" id="notif-badge">0</span></button>
-          <div class="dd-menu" id="notif-menu" style="min-width:340px;max-height:460px;overflow-y:auto">
+          <div class="dd-menu" id="notif-menu" style="min-width:340px;max-height:480px;overflow-y:auto">
             <div class="dd-head flex items-center justify-between"><span class="nm">Thông báo &amp; nhắc việc</span><button class="btn-sm btn-ghost" onclick="Notif.markAllRead()">Đã đọc hết</button></div>
             <div id="notif-list"></div>
+            <div style="position:sticky;bottom:0;padding:10px 12px;background:var(--surface);border-top:1px solid var(--border)"><button class="btn btn-primary" style="width:100%;justify-content:center" onclick="UI.closeDropdowns();Bulletin.open()">📢 Tạo bản tin để dán Zalo</button></div>
           </div>
         </div>
         <div class="dd">
