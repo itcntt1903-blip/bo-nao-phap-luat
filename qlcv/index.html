@@ -853,13 +853,15 @@ const Notif = {
     const me=State.me; if(!me) return [];
     if(!Store.data.notifRead) Store.data.notifRead=[];
     const read=Store.data.notifRead, out=[];
-    const mine=Store.tasks().filter(t=>t.assignee===me.id && t.status!=='done');
-    mine.forEach(t=>{
+    const broad=Auth.can('task.view_all');
+    const scope=(broad?Store.tasks():Store.tasks().filter(t=>t.assignee===me.id)).filter(t=>t.status!=='done');
+    scope.forEach(t=>{
       const d=U.daysFromToday(t.due); if(d===null) return;
+      const au=Store.user(t.assignee); const who=broad?(au?' — '+au.fullName:' — (chưa giao)'):'';
       let id,type,title,text,iconCls,ic;
-      if(d<0){ id='ov_'+t.id+'_'+t.due; type='overdue'; ic='alert'; iconCls='ic-danger'; title='Công việc quá hạn'; text=t.title+' · trễ '+Math.abs(d)+' ngày'; }
-      else if(d===0){ id='td_'+t.id+'_'+t.due; type='today'; ic='clock'; iconCls='ic-warn'; title='Đến hạn hôm nay'; text=t.title; }
-      else if(d<=2){ id='so_'+t.id+'_'+t.due; type='soon'; ic='clock'; iconCls='ic-info'; title='Sắp đến hạn'; text=t.title+' · còn '+d+' ngày'; }
+      if(d<0){ id='ov_'+t.id+'_'+t.due; type='overdue'; ic='alert'; iconCls='ic-danger'; title='Công việc quá hạn'; text=t.title+who+' · trễ '+Math.abs(d)+' ngày'; }
+      else if(d===0){ id='td_'+t.id+'_'+t.due; type='today'; ic='clock'; iconCls='ic-warn'; title='Đến hạn hôm nay'; text=t.title+who; }
+      else if(d<=2){ id='so_'+t.id+'_'+t.due; type='soon'; ic='clock'; iconCls='ic-info'; title='Sắp đến hạn'; text=t.title+who+' · còn '+d+' ngày'; }
       else return;
       out.push({ id, type, ic, iconCls, title, text, taskId:t.id, time:t.due, unread:!read.includes(id) });
     });
